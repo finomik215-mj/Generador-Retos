@@ -195,20 +195,30 @@ Cada reto debe incluir siempre esta estructura:
 
 ## Formato de salida
 
-Primero entrega una tabla resumen:
+NUNCA incluyas texto introductorio, explicaciones previas, justificaciones de tu selección, saludos ni resúmenes al final.
 
-| Apartado | Tipo de reto | Objetivo | Dificultad | Duración estimada |
-| -------- | ------------ | -------- | ---------- | ----------------- |
+Genera cada reto con exactamente este formato, separado por `---`:
 
-Después desarrolla cada reto completo con la estructura indicada.
+---
+**Tipo:** [tipo de reto]
+**Subtema:** [apartado del contenido]
 
-## Antes de generar
+**Pregunta / Enunciado:**
+[enunciado exacto que verá el usuario]
 
-Cuando te peguemos el contenido, si no te indicamos qué retos queremos, pregúntanos:
+**Opciones:**
+- A) [opción] ✓  ← marca con ✓ solo la correcta
+- B) [opción]
+- C) [opción]
+- D) [opción]
 
-"¿Qué tipos de reto queréis que genere para este contenido? Puedo hacer todos los compatibles o una selección recomendada."
+**Feedback correcto:** [una frase explicando por qué es correcta]
+**Feedback incorrecto:** [una frase explicando el error]
+---
 
-Si te decimos "haz una selección recomendada", elige tú los mejores tipos de reto en función del contenido.
+Si el tipo de reto no tiene opciones múltiples (por ejemplo Distribución, Ordenación, Rellenar huecos), adapta la sección "Opciones" al formato que corresponda: lista de elementos a ordenar, frases con hueco, categorías a emparejar, etc. Siempre indicando la respuesta correcta.
+
+Nada más. Sin tabla resumen, sin duración, sin notas de diseño, sin consecuencias.
 
 ## Contenido de la lección
 
