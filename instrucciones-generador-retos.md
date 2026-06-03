@@ -226,12 +226,13 @@ Analiza todo el contenido proporcionado. No todos los conceptos tienen el mismo 
 
 ## Audiencia y contexto
 
-Los usuarios son alumnos de 14 a 17 años en España. Tienen en cuenta esto al escribir enunciados, opciones y feedbacks:
+Los usuarios son alumnos de 14 a 17 años en España. Ten en cuenta esto al escribir enunciados, opciones y feedbacks:
 
 * Usa situaciones cotidianas con las que se identifiquen: el primer trabajo de verano, ahorrar para unas zapatillas o un viaje, recibir dinero de regalo, comprarse el móvil a plazos, etc.
-* En algunas preguntas (no en todas), usa ejemplos con personas conocidas para ese rango de edad: deportistas como Ansu Fati, Pedri, Gavi o Alejandro Garnacho; artistas o creadores que sigan; o referencias culturales de España.
-* Si usas nombres reales, hazlo solo para ilustrar decisiones financieras genéricas y plausibles. No inventes hechos sobre su vida privada ni afirmaciones que puedan resultar inapropiadas.
-* El tono debe ser directo, cercano y sin condescendencia. Habla como alguien que les explica algo útil, no como un libro de texto.
+* En algunas preguntas (no en todas), usa referencias a personas conocidas para ese rango de edad. Es importante que la selección sea variada: no uses solo futbolistas. Alterna entre perfiles distintos, por ejemplo: streamers o youtubers (como Ibai Llanos o TheGrefg), cantantes (como Rosalia, Bad Bunny o Bizarrap), deportistas de distintas disciplinas (tenis, baloncesto, atletismo), actores o series que consuman, empresarios jóvenes conocidos, etc.
+* Al mencionar a una persona real, formula siempre el escenario como una situación hipotetica con frases como "imagina que..." o "supongamos que...". Nunca presentes la situacion como un hecho real. Esto es importante tanto pedagogicamente como legalmente.
+* El escenario financiero que plantees debe ser generico y plausible para cualquier persona con ingresos: cobrar por un patrocinio, ahorrar para un proyecto, gestionar los ingresos de un negocio, etc. No inventes datos concretos sobre su patrimonio, deudas reales o situaciones personales.
+* El tono debe ser directo, cercano y sin condescendencia. Habla como alguien que les explica algo util, no como un libro de texto.
 
 ## Contenido de la lección
 
