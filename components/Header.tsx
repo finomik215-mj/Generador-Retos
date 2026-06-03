@@ -1,3 +1,5 @@
+'use client'
+
 export default function Header() {
   async function handleLogout() {
     await fetch('/api/logout', { method: 'POST' })

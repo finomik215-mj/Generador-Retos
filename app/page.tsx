@@ -46,8 +46,9 @@ export default function HomePage() {
     while (true) {
       const { done, value } = await reader.read()
       if (done) break
-      setOutput(prev => prev + decoder.decode(value))
+      setOutput(prev => prev + decoder.decode(value, { stream: true }))
     }
+    setOutput(prev => prev + decoder.decode())
 
     setLoading(false)
   }
