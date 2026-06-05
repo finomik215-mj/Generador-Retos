@@ -3,9 +3,8 @@ import Anthropic from '@anthropic-ai/sdk'
 import { getSystemPrompt } from '@/lib/systemPrompt'
 import { buildUserMessage } from '@/lib/buildUserMessage'
 
-const client = new Anthropic()
-
 export async function POST(req: NextRequest) {
+  const client = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY })
   const session = req.cookies.get('session')?.value
   if (session !== 'authenticated') {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
