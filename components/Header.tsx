@@ -13,14 +13,14 @@ export default function Header() {
           Finomik
         </span>
         <span className="text-finomik-light2 text-sm font-medium hidden sm:block">
-          Generador de Retos
+          Generador de Reptes
         </span>
       </div>
       <button
         onClick={handleLogout}
         className="text-finomik-light2 hover:text-white text-sm font-medium transition"
       >
-        Cerrar sesión
+        Tancar sessió
       </button>
     </header>
   )

@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   const client = new Anthropic({ apiKey: process.env.CLAUDE_API_KEY })
   const session = req.cookies.get('session')?.value
   if (session !== 'authenticated') {
-    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    return NextResponse.json({ error: 'No autoritzat' }, { status: 401 })
   }
 
   const { content, selectedTypes } = await req.json() as {
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (!content?.trim()) {
-    return NextResponse.json({ error: 'Contenido vacío' }, { status: 400 })
+    return NextResponse.json({ error: 'Contingut buit' }, { status: 400 })
   }
 
   const systemPrompt = getSystemPrompt()

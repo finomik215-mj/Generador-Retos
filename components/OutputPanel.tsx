@@ -56,7 +56,7 @@ function RetoCard({ text }: { text: string }) {
           const value = line.replace('**Feedback correcto:**', '').trim()
           return (
             <div key={i} className="bg-green-50 border border-green-200 rounded-lg px-4 py-3">
-              <p className="text-xs font-extrabold text-green-700 uppercase tracking-wide mb-1">Correcto</p>
+              <p className="text-xs font-extrabold text-green-700 uppercase tracking-wide mb-1">Correcte</p>
               <p className="text-sm text-green-800">{value}</p>
             </div>
           )
@@ -65,7 +65,7 @@ function RetoCard({ text }: { text: string }) {
           const value = line.replace('**Feedback incorrecto:**', '').trim()
           return (
             <div key={i} className="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
-              <p className="text-xs font-extrabold text-red-700 uppercase tracking-wide mb-1">Incorrecto</p>
+              <p className="text-xs font-extrabold text-red-700 uppercase tracking-wide mb-1">Incorrecte</p>
               <p className="text-sm text-red-800">{value}</p>
             </div>
           )
@@ -134,9 +134,9 @@ export default function OutputPanel({ output, loading }: OutputPanelProps) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center py-20 gap-4">
         <div className="text-5xl">🎯</div>
-        <p className="font-extrabold text-finomik-blue text-lg">Los retos aparecerán aquí</p>
+        <p className="font-extrabold text-finomik-blue text-lg">Els reptes apareixeran aquí</p>
         <p className="text-finomik-mid3 text-sm max-w-xs">
-          Pega el contenido de tu lección, elige los tipos de reto y pulsa Generar retos.
+          Enganxa el contingut de la teva lliçó, tria els tipus de repte i prem Generar reptes.
         </p>
       </div>
     )
@@ -145,7 +145,7 @@ export default function OutputPanel({ output, loading }: OutputPanelProps) {
   if (total === 0 && output) {
     return (
       <div className="flex items-center justify-center h-full py-20">
-        <p className="text-finomik-mid3 text-sm animate-pulse">Generando retos...</p>
+        <p className="text-finomik-mid3 text-sm animate-pulse">Generant reptes...</p>
       </div>
     )
   }
@@ -156,18 +156,18 @@ export default function OutputPanel({ output, loading }: OutputPanelProps) {
     <div className="flex flex-col h-full gap-4">
       <div className="flex items-center justify-between">
         <p className="text-finomik-mid3 text-sm font-medium">
-          Reto{' '}
+          Repte{' '}
           <span className="font-extrabold text-finomik-blue">{page + 1}</span>{' '}
           de {total}
           {loading && (
-            <span className="ml-2 animate-pulse text-xs">generando...</span>
+            <span className="ml-2 animate-pulse text-xs">generant...</span>
           )}
         </p>
         <button
           onClick={handleCopy}
           className="text-xs font-medium text-finomik-blue border border-finomik-light2 px-3 py-1.5 rounded-lg hover:bg-finomik-light2 transition"
         >
-          {copied ? 'Copiado' : 'Copiar todo'}
+          {copied ? 'Copiat' : 'Copiar tot'}
         </button>
       </div>
 
@@ -201,7 +201,7 @@ export default function OutputPanel({ output, loading }: OutputPanelProps) {
           disabled={page === total - 1}
           className="px-4 py-2 rounded-xl border border-finomik-light2 text-finomik-blue text-sm font-medium disabled:opacity-30 hover:bg-finomik-light2 transition"
         >
-          Siguiente
+          Següent
         </button>
       </div>
     </div>

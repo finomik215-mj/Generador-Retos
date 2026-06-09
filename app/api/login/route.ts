@@ -4,7 +4,7 @@ export async function POST(req: NextRequest) {
   const { password } = await req.json()
 
   if (password !== process.env.APP_PASSWORD) {
-    return NextResponse.json({ error: 'Contraseña incorrecta' }, { status: 401 })
+    return NextResponse.json({ error: 'Contrasenya incorrecta' }, { status: 401 })
   }
 
   const response = NextResponse.json({ ok: true })

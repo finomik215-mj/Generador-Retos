@@ -1,0 +1,355 @@
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
+import SubtemaSelector from './SubtemaSelector'
+import RetoCreador from './RetoCreador'
+
+interface PreloadedQuestion {
+  modulo: string
+  leccion: string
+  subtema: string
+  pregunta_numero: number
+  pregunta_texto: string
+}
+
+interface Props {
+  preloaded?: PreloadedQuestion | null
+  onAprobado: () => void
+  onGenerarRetos: (
+    contenido: string,
+    meta: { modulo: string; leccion: string; subtema: string; pregunta_numero: number; pregunta_texto: string }
+  ) => void
+}
+
+export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRetos }: Props) {
+  const [palabras, setPalabras] = useState(250)
+  const [output, setOutput] = useState('')
+  const [editado, setEditado] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [aprobando, setAprobando] = useState(false)
+  const [aprobado, setAprobado] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [showRetoCreador, setShowRetoCreador] = useState(false)
+
+  const [activePregunta, setActivePregunta] = useState<PreloadedQuestion | null>(preloaded ?? null)
+
+  useEffect(() => {
+    if (preloaded) setActivePregunta(preloaded)
+  }, [preloaded])
+
+  useEffect(() => {
+    setOutput('')
+    setEditado('')
+    setError('')
+    setAprobado(false)
+    setShowRetoCreador(false)
+  }, [activePregunta?.subtema, activePregunta?.leccion, activePregunta?.modulo, activePregunta?.pregunta_numero])
+
+  const loadExistingContent = useCallback(async (p: PreloadedQuestion) => {
+    const params = new URLSearchParams({
+      modulo: p.modulo,
+      leccion: p.leccion,
+      subtema: p.subtema,
+      pregunta_numero: String(p.pregunta_numero),
+    })
+    const res = await fetch(`/api/contenido/obtener?${params}`)
+    if (!res.ok) return
+    const data = await res.json()
+    if (data.data?.contenido) {
+      setOutput(data.data.contenido)
+      setAprobado(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (activePregunta) loadExistingContent(activePregunta)
+  }, [activePregunta, loadExistingContent])
+
+  const textoActual = editado || output
+
+  const canGenerate = activePregunta &&
+    activePregunta.modulo.trim() &&
+    activePregunta.leccion.trim() &&
+    activePregunta.subtema.trim() &&
+    activePregunta.pregunta_texto.trim()
+
+  async function handleGenerar() {
+    if (!activePregunta) return
+    setLoading(true)
+    setOutput('')
+    setEditado('')
+    setError('')
+    setAprobado(false)
+
+    const res = await fetch('/api/contenido/generar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        modulo: activePregunta.modulo,
+        leccion: activePregunta.leccion,
+        subtema: activePregunta.subtema,
+        pregunta_numero: activePregunta.pregunta_numero,
+        pregunta_texto: activePregunta.pregunta_texto,
+        palabras,
+      }),
+    })
+
+    if (!res.ok) {
+      const data = await res.json()
+      setError(data.error ?? 'Error desconegut')
+      setLoading(false)
+      return
+    }
+
+    const reader = res.body!.getReader()
+    const decoder = new TextDecoder()
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      setOutput(prev => prev + decoder.decode(value, { stream: true }))
+    }
+    setOutput(prev => prev + decoder.decode())
+    setLoading(false)
+  }
+
+  async function handleAprobar() {
+    if (!activePregunta) return
+    setAprobando(true)
+    setError('')
+    const res = await fetch('/api/contenido/aprobar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        modulo: activePregunta.modulo,
+        leccion: activePregunta.leccion,
+        subtema: activePregunta.subtema,
+        pregunta_numero: activePregunta.pregunta_numero,
+        pregunta_texto: activePregunta.pregunta_texto,
+        contenido: textoActual,
+      }),
+    })
+    const data = await res.json()
+    if (!res.ok) {
+      setError(data.error ?? 'Error en desar')
+    } else {
+      setAprobado(true)
+      onAprobado()
+    }
+    setAprobando(false)
+  }
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(textoActual)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  function handleGenerarRetos() {
+    if (!activePregunta) return
+    onGenerarRetos(textoActual, {
+      modulo: activePregunta.modulo,
+      leccion: activePregunta.leccion,
+      subtema: activePregunta.subtema,
+      pregunta_numero: activePregunta.pregunta_numero,
+      pregunta_texto: activePregunta.pregunta_texto,
+    })
+  }
+
+  const wordCount = textoActual.trim().split(/\s+/).filter(Boolean).length
+
+  return (
+    <div className="flex flex-col lg:flex-row w-full h-full overflow-hidden">
+      {/* Left panel */}
+      <aside className="w-full lg:w-2/5 border-r border-finomik-light2 p-6 flex flex-col gap-5 overflow-y-auto">
+        <SubtemaSelector
+          label="Seleccionar pregunta"
+          onSelect={(item) => setActivePregunta(item)}
+        />
+
+        {!activePregunta && (
+          <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
+            <div className="text-4xl">✍️</div>
+            <p className="font-extrabold text-finomik-blue text-base">Selecciona una pregunta</p>
+            <p className="text-finomik-mid3 text-sm max-w-xs">
+              Utilitza el selector de dalt o vés a l'índex i fes clic en una pregunta.
+            </p>
+          </div>
+        )}
+
+        {activePregunta && (
+          <div className="flex flex-col gap-3">
+            {[
+              { label: 'Mòdul', value: activePregunta.modulo },
+              { label: 'Lliçó', value: activePregunta.leccion },
+              { label: 'Subtema', value: activePregunta.subtema },
+            ].map(({ label, value }) => (
+              <div key={label} className="flex flex-col gap-1">
+                <span className="text-xs font-extrabold text-finomik-blue uppercase tracking-wide">{label}</span>
+                <div className="border border-finomik-light2 rounded-xl px-4 py-2.5 text-sm text-finomik-mid2 bg-finomik-light2/20">
+                  {value}
+                </div>
+              </div>
+            ))}
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-extrabold text-finomik-blue uppercase tracking-wide">
+                Pregunta {activePregunta.pregunta_numero}
+              </span>
+              <div className="border border-finomik-blue/30 rounded-xl px-4 py-2.5 text-sm text-finomik-blue font-medium bg-finomik-blue/5">
+                {activePregunta.pregunta_texto}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Word count slider */}
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-extrabold text-finomik-blue uppercase tracking-wide">
+            Objectiu de paraules
+          </span>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={100}
+              max={600}
+              step={50}
+              value={palabras}
+              onChange={e => setPalabras(Number(e.target.value))}
+              disabled={loading}
+              className="flex-1 accent-finomik-blue"
+            />
+            <span className="text-sm font-extrabold text-finomik-blue w-16 text-right">
+              {palabras} pal.
+            </span>
+          </div>
+        </div>
+
+        <button
+          onClick={handleGenerar}
+          disabled={!canGenerate || loading}
+          className="w-full py-3 rounded-2xl font-extrabold text-sm transition bg-finomik-blue text-white hover:bg-finomik-mid1 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {loading ? 'Generant...' : 'Generar contingut'}
+        </button>
+
+        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+      </aside>
+
+      {/* Right panel */}
+      <section className="flex-1 p-6 flex flex-col gap-4 overflow-y-auto bg-white">
+        {loading && !output ? (
+          <div className="flex flex-col gap-4 animate-pulse p-2">
+            <div className="h-4 bg-finomik-light2 rounded w-3/4" />
+            <div className="h-4 bg-finomik-light2 rounded w-full" />
+            <div className="h-4 bg-finomik-light2 rounded w-5/6" />
+            <div className="h-4 bg-finomik-light2 rounded w-full" />
+            <div className="h-4 bg-finomik-light2 rounded w-2/3" />
+          </div>
+        ) : !output && !loading ? (
+          <div className="flex flex-col items-center justify-center h-full text-center py-20 gap-4">
+            <div className="text-5xl">✍️</div>
+            <p className="font-extrabold text-finomik-blue text-lg">El contingut apareixerà aquí</p>
+            <p className="text-finomik-mid3 text-sm max-w-xs">
+              Ajusta l'objectiu de paraules i prem Generar contingut.
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Top bar */}
+            <div className="flex items-center justify-between shrink-0">
+              <p className="text-finomik-mid3 text-sm font-medium">
+                <span className="font-extrabold text-finomik-blue">{wordCount}</span> palabras
+                {loading && <span className="ml-2 animate-pulse text-xs">generant...</span>}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleCopy}
+                  className="text-xs font-medium text-finomik-blue border border-finomik-light2 px-3 py-1.5 rounded-lg hover:bg-finomik-light2 transition"
+                >
+                  {copied ? 'Copiat' : 'Copiar'}
+                </button>
+                {!loading && output && !aprobado && (
+                  <button
+                    onClick={handleAprobar}
+                    disabled={aprobando}
+                    className="text-xs font-extrabold bg-finomik-blue text-white px-4 py-1.5 rounded-lg hover:bg-finomik-mid1 transition disabled:opacity-50"
+                  >
+                    {aprobando ? 'Desant...' : 'Aprovar i desar'}
+                  </button>
+                )}
+                {aprobado && (
+                  <span className="text-xs font-extrabold text-green-600 border border-green-200 bg-green-50 px-4 py-1.5 rounded-lg">
+                    Desat
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Content area */}
+            <div className="flex-1 bg-white border border-finomik-light2 rounded-2xl p-6 overflow-y-auto min-h-48">
+              {loading ? (
+                <p className="text-finomik-blue text-base leading-relaxed whitespace-pre-wrap">
+                  {output}
+                </p>
+              ) : (
+                <textarea
+                  value={textoActual}
+                  onChange={e => setEditado(e.target.value)}
+                  className="w-full h-full min-h-48 text-finomik-blue text-base leading-relaxed resize-none focus:outline-none"
+                  placeholder="El contingut generat apareixerà aquí. Pots editar-lo abans d'aprovar-lo."
+                />
+              )}
+            </div>
+
+            {/* Actions after approval */}
+            {!loading && output && aprobado && activePregunta && (
+              <div className="flex flex-col gap-3 shrink-0">
+                <div className="bg-finomik-gold/10 border border-finomik-gold rounded-xl px-4 py-3 flex flex-col gap-3">
+                  <p className="text-sm font-extrabold text-finomik-blue">Contingut aprovat. Que vols fer ara?</p>
+                  <div className="flex gap-3 flex-wrap">
+                    <button
+                      onClick={handleGenerarRetos}
+                      className="bg-finomik-gold text-finomik-blue font-extrabold text-sm px-5 py-2.5 rounded-xl hover:bg-finomik-gold/80 transition"
+                    >
+                      Generar reptes amb Claude
+                    </button>
+                    <button
+                      onClick={() => setShowRetoCreador(v => !v)}
+                      className="bg-white border border-finomik-blue text-finomik-blue font-extrabold text-sm px-5 py-2.5 rounded-xl hover:bg-finomik-blue/5 transition"
+                    >
+                      {showRetoCreador ? 'Ocultar creador manual' : 'Crear repte manualment'}
+                    </button>
+                  </div>
+                </div>
+
+                {showRetoCreador && (
+                  <div className="border border-finomik-light2 rounded-2xl p-5 bg-white">
+                    <RetoCreador
+                      modulo={activePregunta.modulo}
+                      leccion={activePregunta.leccion}
+                      subtema={activePregunta.subtema}
+                      pregunta_numero={activePregunta.pregunta_numero}
+                      pregunta_texto={activePregunta.pregunta_texto}
+                      onGuardado={() => { setShowRetoCreador(false); onAprobado() }}
+                      onCancel={() => setShowRetoCreador(false)}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Notice when not yet approved */}
+            {!loading && output && !aprobado && (
+              <div className="bg-finomik-gold/10 border border-finomik-gold rounded-xl px-4 py-3 shrink-0">
+                <p className="text-sm text-finomik-blue">
+                  <span className="font-extrabold">Satisfet amb el contingut?</span> Aprova i desa primer, després genera els reptes.
+                </p>
+                {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
+              </div>
+            )}
+          </>
+        )}
+      </section>
+    </div>
+  )
+}

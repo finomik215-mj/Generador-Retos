@@ -1,17 +1,17 @@
 const RETO_TYPES = [
-  { id: 1,  label: 'Quiz rápido multi-opción' },
-  { id: 2,  label: 'Distribución' },
-  { id: 3,  label: 'Ordenación' },
-  { id: 4,  label: 'Consecuencia inmediata' },
-  { id: 5,  label: 'Evento inesperado' },
-  { id: 6,  label: 'Consecuencia diferida' },
-  { id: 7,  label: 'Verdadero / Falso' },
-  { id: 8,  label: 'Rellenar huecos' },
-  { id: 9,  label: 'Matching / Emparejar' },
-  { id: 10, label: 'Cálculo guiado' },
-  { id: 11, label: 'Elección binaria con presión' },
-  { id: 12, label: 'Predicción' },
-  { id: 13, label: 'Mini-caso / Historia corta' },
+  { id: 1,  label: 'Quiz ràpid multi-opció' },
+  { id: 2,  label: 'Distribució' },
+  { id: 3,  label: 'Ordenació' },
+  { id: 4,  label: 'Conseqüència immediata' },
+  { id: 5,  label: 'Esdeveniment inesperat' },
+  { id: 6,  label: 'Conseqüència diferida' },
+  { id: 7,  label: 'Vertader / Fals' },
+  { id: 8,  label: 'Omplir buits' },
+  { id: 9,  label: 'Matching / Emparellar' },
+  { id: 10, label: 'Càlcul guiat' },
+  { id: 11, label: 'Elecció binària amb pressió' },
+  { id: 12, label: 'Predicció' },
+  { id: 13, label: 'Mini-cas / Història curta' },
 ]
 
 interface TypeSelectorProps {
@@ -40,7 +40,7 @@ export default function TypeSelector({
   return (
     <div className="flex flex-col gap-3">
       <label className="font-extrabold text-finomik-blue text-sm uppercase tracking-wide">
-        Tipos de reto
+        Tipus de repte
       </label>
 
       <label className="flex items-center gap-3 cursor-pointer">
@@ -52,7 +52,7 @@ export default function TypeSelector({
           className="accent-finomik-gold w-4 h-4"
         />
         <span className="font-extrabold text-finomik-blue text-sm">
-          Selección recomendada por IA
+          Selecció recomanada per IA
         </span>
       </label>
 

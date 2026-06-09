@@ -25,7 +25,7 @@ export default function LoginPage() {
     if (res.ok) {
       router.push('/')
     } else {
-      setError('Contraseña incorrecta')
+      setError('Contrasenya incorrecta')
     }
   }
 
@@ -36,7 +36,7 @@ export default function LoginPage() {
           Finomik
         </h1>
         <p className="text-center text-finomik-mid1 text-sm mb-8 font-medium">
-          Generador de Retos Educativos
+          Generador de Reptes Educatius
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -44,7 +44,7 @@ export default function LoginPage() {
             type="password"
             value={password}
             onChange={e => setPassword(e.target.value)}
-            placeholder="Contraseña"
+            placeholder="Contrasenya"
             className="border border-finomik-light2 rounded-lg px-4 py-3 text-finomik-blue placeholder-finomik-light1 focus:outline-none focus:ring-2 focus:ring-finomik-blue"
             required
           />
@@ -58,7 +58,7 @@ export default function LoginPage() {
             disabled={loading || !password}
             className="bg-finomik-gold text-finomik-blue font-extrabold py-3 rounded-lg hover:brightness-95 disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
-            {loading ? 'Entrando...' : 'Entrar'}
+            {loading ? 'Entrant...' : 'Entrar'}
           </button>
         </form>
       </div>
