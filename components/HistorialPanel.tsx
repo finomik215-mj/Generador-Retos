@@ -79,9 +79,9 @@ export default function HistorialPanel({ historial, onDelete }: HistorialPanelPr
                 {expanded === item.id && (
                   <div className="px-4 pb-4 border-t border-finomik-light2">
                     <p className="text-xs font-extrabold text-finomik-mid3 uppercase tracking-wide mt-3 mb-1">
-                      Preguntes
+                      Pregunta {item.pregunta_numero}
                     </p>
-                    <p className="text-sm text-finomik-mid1 whitespace-pre-wrap mb-3">{item.preguntas}</p>
+                    <p className="text-sm text-finomik-mid1 whitespace-pre-wrap mb-3">{item.pregunta_texto}</p>
                     <p className="text-xs font-extrabold text-finomik-mid3 uppercase tracking-wide mb-1">
                       Contingut
                     </p>
