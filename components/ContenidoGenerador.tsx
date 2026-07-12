@@ -5,11 +5,33 @@ import SubtemaSelector from './SubtemaSelector'
 import RetoCreador from './RetoCreador'
 
 type Idioma = 'ca' | 'es' | 'en'
+type Pes = 'lleuger' | 'normal' | 'intens'
 
 interface ActiveSubtema {
   modulo: string
   leccion: string
   subtema: string
+  pes: Pes
+}
+
+const PARAULES_PER_PES: Record<Pes, number> = {
+  lleuger: 650,
+  normal: 1000,
+  intens: 1300,
+}
+
+const FACTOR_PER_MODUL: Record<string, number> = {
+  'Módulo General': 1.0,
+  'Introducción a la Inversión': 0.94,
+  'Vida Adulta': 0.78,
+  'Emprendimiento': 1.0,
+  'Economía 1º de Bachillerato': 1.0,
+}
+
+function calcularParaules(modulo: string, pes: Pes): number {
+  const base = PARAULES_PER_PES[pes]
+  const factor = FACTOR_PER_MODUL[modulo] ?? 1.0
+  return Math.round(base * factor / 10) * 10
 }
 
 interface Props {
@@ -25,7 +47,6 @@ const IDIOMES: { id: Idioma; label: string }[] = [
 ]
 
 export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRetos }: Props) {
-  const [palabras, setPalabras] = useState(800)
   const [idioma, setIdioma] = useState<Idioma>('ca')
   const [output, setOutput] = useState('')
   const [editado, setEditado] = useState('')
@@ -124,7 +145,7 @@ export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRet
         modulo: activeSubtema.modulo,
         leccion: activeSubtema.leccion,
         subtema: activeSubtema.subtema,
-        palabras,
+        palabras: calcularParaules(activeSubtema.modulo, activeSubtema.pes),
         idioma,
       }),
     })
@@ -241,27 +262,22 @@ export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRet
           </div>
         </div>
 
-        {/* Word count slider */}
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-extrabold text-finomik-blue uppercase tracking-wide">
-            Objectiu de paraules
-          </span>
-          <div className="flex items-center gap-3">
-            <input
-              type="range"
-              min={300}
-              max={1500}
-              step={100}
-              value={palabras}
-              onChange={e => setPalabras(Number(e.target.value))}
-              disabled={loading}
-              className="flex-1 accent-finomik-blue"
-            />
-            <span className="text-sm font-extrabold text-finomik-blue w-16 text-right">
-              {palabras} pal.
+        {/* Word count — auto per pes del bloc */}
+        {activeSubtema && (
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-extrabold text-finomik-blue uppercase tracking-wide">
+              Objectiu de paraules
             </span>
+            <div className="flex items-center justify-between border border-finomik-light2 rounded-xl px-4 py-2.5 bg-finomik-light2/20">
+              <span className="text-sm text-finomik-mid2">
+                {activeSubtema.pes === 'lleuger' ? 'Introductori' : activeSubtema.pes === 'intens' ? 'Intens' : 'Estàndard'}
+              </span>
+              <span className="text-sm font-extrabold text-finomik-blue">
+                {calcularParaules(activeSubtema.modulo, activeSubtema.pes)} pal.
+              </span>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Reference material (collapsible) */}
         {activeSubtema && (

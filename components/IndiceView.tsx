@@ -11,16 +11,26 @@ import { CSS } from '@dnd-kit/utilities'
 import { RetoGuardado } from '@/lib/supabase'
 
 // ── Types ──────────────────────────────────────────────────────────────────
+type Pes = 'lleuger' | 'normal' | 'intens'
+
 interface Modul    { id: string; nom: string; ordre: number }
 interface Leccio   { id: string; modulo: string; nom: string; ordre: number }
 interface Subtema  { id: string; modulo: string; leccion: string; nom: string; ordre: number }
-interface Pregunta { id: string; modulo: string; leccion: string; subtema: string; text: string; ordre: number }
 
-interface ContenidoStatus { modulo: string; leccion: string; subtema: string; pregunta_numero: number; id: string }
-interface RetosStatus     { modulo: string; leccion: string; subtema: string; pregunta_numero: number }
+interface ContenidoStatus { modulo: string; leccion: string; subtema: string; id: string }
+interface RetosStatus     { modulo: string; leccion: string; subtema: string }
 
 interface Props {
-  onSelectSubtema: (item: { modulo: string; leccion: string; subtema: string; pregunta_numero: number; pregunta_texto: string }) => void
+  onSelectSubtema: (item: { modulo: string; leccion: string; subtema: string; pes: Pes }) => void
+}
+
+function derivarPes(blocNom: string, totalBlocs: number, blocIndex: number): Pes {
+  const nom = blocNom.toLowerCase()
+  if (blocIndex === 0) return 'lleuger'
+  if (blocIndex >= totalBlocs - 1) return 'normal'
+  if (/eina|product|invers|nòmina|impost|contrac|mercat|simulad/.test(nom)) return 'intens'
+  if (/hàbit|consolidar|reflexi|construir|aprendr/.test(nom)) return 'lleuger'
+  return 'normal'
 }
 
 // ── Drag handle icon ───────────────────────────────────────────────────────
@@ -37,30 +47,9 @@ function GripIcon() {
   )
 }
 
-// ── Inline input ───────────────────────────────────────────────────────────
-function InlineInput({ placeholder, onSave, onCancel, autoFocus = true }: {
-  placeholder: string; onSave: (v: string) => void; onCancel: () => void; autoFocus?: boolean
-}) {
-  const [val, setVal] = useState('')
-  return (
-    <div className="flex gap-2 items-center">
-      <input
-        autoFocus={autoFocus}
-        value={val}
-        onChange={e => setVal(e.target.value)}
-        onKeyDown={e => { if (e.key === 'Enter' && val.trim()) onSave(val.trim()); if (e.key === 'Escape') onCancel() }}
-        placeholder={placeholder}
-        className="border border-finomik-blue/40 rounded-lg px-3 py-1.5 text-sm text-finomik-blue placeholder:text-finomik-mid3 focus:outline-none focus:ring-2 focus:ring-finomik-blue/20 flex-1 bg-white"
-      />
-      <button onClick={() => val.trim() && onSave(val.trim())} disabled={!val.trim()} className="bg-finomik-blue text-white rounded-lg px-3 py-1.5 text-xs font-extrabold hover:bg-finomik-mid1 transition disabled:opacity-40">Desar</button>
-      <button onClick={onCancel} className="border border-finomik-light2 text-finomik-mid3 rounded-lg px-3 py-1.5 text-xs hover:bg-finomik-light2 transition">Cancel·lar</button>
-    </div>
-  )
-}
-
-// ── Question expanded detail ───────────────────────────────────────────────
-function QuestionDetail({ modulo, leccion, subtema, pregunta_numero, onSelect, onRefresh }: {
-  modulo: string; leccion: string; subtema: string; pregunta_numero: number
+// ── Subtema expanded detail ────────────────────────────────────────────────
+function SubtemaDetail({ modulo, leccion, subtema, onSelect, onRefresh }: {
+  modulo: string; leccion: string; subtema: string
   onSelect: () => void; onRefresh: () => void
 }) {
   const [contenido, setContenido] = useState<{ id: string; contenido: string } | null>(null)
@@ -68,7 +57,7 @@ function QuestionDetail({ modulo, leccion, subtema, pregunta_numero, onSelect, o
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const params = new URLSearchParams({ modulo, leccion, subtema, pregunta_numero: String(pregunta_numero) })
+    const params = new URLSearchParams({ modulo, leccion, subtema })
     Promise.all([
       fetch(`/api/contenido/obtener?${params}`).then(r => r.ok ? r.json() : { data: null }),
       fetch(`/api/retos/listar?${params}`).then(r => r.ok ? r.json() : { data: [] }),
@@ -77,7 +66,7 @@ function QuestionDetail({ modulo, leccion, subtema, pregunta_numero, onSelect, o
       setRetos(rData.data ?? [])
       setLoading(false)
     })
-  }, [modulo, leccion, subtema, pregunta_numero])
+  }, [modulo, leccion, subtema])
 
   async function deleteContenido(id: string) {
     if (!confirm('Eliminar aquest contingut?')) return
@@ -90,10 +79,10 @@ function QuestionDetail({ modulo, leccion, subtema, pregunta_numero, onSelect, o
     setRetos(prev => prev.filter(r => r.id !== id)); onRefresh()
   }
 
-  if (loading) return <p className="text-xs text-finomik-mid3 animate-pulse px-12 py-2">Carregant...</p>
+  if (loading) return <p className="text-xs text-finomik-mid3 animate-pulse px-10 py-2">Carregant...</p>
 
   return (
-    <div className="px-12 pb-4 flex flex-col gap-3">
+    <div className="px-10 pb-4 flex flex-col gap-3">
       {contenido ? (
         <div className="border border-green-200 rounded-xl px-4 py-3 bg-green-50 flex flex-col gap-2">
           <div className="flex items-center justify-between">
@@ -107,7 +96,7 @@ function QuestionDetail({ modulo, leccion, subtema, pregunta_numero, onSelect, o
         </div>
       ) : (
         <button onClick={onSelect} className="self-start text-xs font-extrabold bg-finomik-blue text-white px-4 py-2 rounded-xl hover:bg-finomik-mid1 transition">
-          Generar contingut per a aquesta pregunta
+          Generar contingut per a aquest subtema
         </button>
       )}
       {retos.length > 0 && (
@@ -132,89 +121,24 @@ function QuestionDetail({ modulo, leccion, subtema, pregunta_numero, onSelect, o
   )
 }
 
-// ── Sortable Pregunta row ──────────────────────────────────────────────────
-function SortablePregunta({ pregunta, hasContent, hasRetos, onSelect, onDelete, onRefresh }: {
-  pregunta: Pregunta; hasContent: boolean; hasRetos: boolean
-  onSelect: () => void; onDelete: () => void; onRefresh: () => void
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: pregunta.id })
-  const [expanded, setExpanded] = useState(false)
-
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
-
-  return (
-    <div ref={setNodeRef} style={style} className="border-t border-finomik-light2/40 group/q">
-      <div className="flex items-center justify-between px-6 py-2.5 hover:bg-finomik-light2/10 transition">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-finomik-mid3/40 hover:text-finomik-mid3 transition shrink-0 touch-none">
-            <GripIcon />
-          </button>
-          <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-2 flex-1 text-left min-w-0">
-            <span className="text-finomik-mid3 text-xs w-3 shrink-0">{expanded ? '▼' : '▶'}</span>
-            <span className="text-xs font-extrabold text-finomik-mid3 shrink-0">P{pregunta.ordre}</span>
-            <span className="text-xs text-finomik-mid2 truncate">{pregunta.text}</span>
-            <div className="flex items-center gap-1 shrink-0 ml-1">
-              {hasRetos && <span className="bg-finomik-gold/20 text-finomik-blue text-xs font-bold px-1.5 py-0.5 rounded-full">Reptes ✓</span>}
-              {hasContent && <span className="bg-green-100 text-green-700 text-xs font-bold px-1.5 py-0.5 rounded-full">Contingut ✓</span>}
-              {!hasContent && !hasRetos && <span className="bg-finomik-light2 text-finomik-mid3 text-xs font-bold px-1.5 py-0.5 rounded-full">Pendent</span>}
-            </div>
-          </button>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <button onClick={onSelect} className="text-finomik-blue text-xs font-extrabold hover:text-finomik-mid1 transition px-2 py-1 rounded-lg hover:bg-finomik-blue/10">
-            {hasContent ? '→ Veure' : '→ Generar'}
-          </button>
-          <button onClick={onDelete} className="text-red-300 hover:text-red-500 text-xs font-bold transition opacity-0 group-hover/q:opacity-100">×</button>
-        </div>
-      </div>
-      {expanded && (
-        <QuestionDetail
-          modulo={pregunta.modulo} leccion={pregunta.leccion} subtema={pregunta.subtema}
-          pregunta_numero={pregunta.ordre} onSelect={onSelect} onRefresh={onRefresh}
-        />
-      )}
-    </div>
-  )
-}
-
 // ── Sortable Subtema ───────────────────────────────────────────────────────
-function SortableSubtema({ subtema, preguntes, contenidoStatus, retosStatus, onSelectSubtema, onDeleteSubtema, onRefresh, onAddPregunta, onDeletePregunta, onReorderPreguntes }: {
+function SortableSubtema({ subtema, pes, contenidoStatus, retosStatus, onSelectSubtema, onDeleteSubtema, onRefresh }: {
   subtema: Subtema
-  preguntes: Pregunta[]
+  pes: Pes
   contenidoStatus: ContenidoStatus[]
   retosStatus: RetosStatus[]
   onSelectSubtema: Props['onSelectSubtema']
   onDeleteSubtema: () => void
   onRefresh: () => void
-  onAddPregunta: (subtema: Subtema) => void
-  onDeletePregunta: (p: Pregunta) => void
-  onReorderPreguntes: (subtemaId: string, newOrder: Pregunta[]) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: subtema.id })
   const [expanded, setExpanded] = useState(false)
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
-
-  function hasContent(pn: number) {
-    return contenidoStatus.some(c => c.modulo === subtema.modulo && c.leccion === subtema.leccion && c.subtema === subtema.nom && c.pregunta_numero === pn)
-  }
-  function hasRetos(pn: number) {
-    return retosStatus.some(r => r.modulo === subtema.modulo && r.leccion === subtema.leccion && r.subtema === subtema.nom && r.pregunta_numero === pn)
-  }
   const tieneContenido = contenidoStatus.some(c => c.modulo === subtema.modulo && c.leccion === subtema.leccion && c.subtema === subtema.nom)
   const tieneRetos = retosStatus.some(r => r.modulo === subtema.modulo && r.leccion === subtema.leccion && r.subtema === subtema.nom)
 
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-    const oldIdx = preguntes.findIndex(p => p.id === active.id)
-    const newIdx = preguntes.findIndex(p => p.id === over.id)
-    const reordered = arrayMove(preguntes, oldIdx, newIdx).map((p, i) => ({ ...p, ordre: i + 1 }))
-    onReorderPreguntes(subtema.id, reordered)
-    // Persist order
-    reordered.forEach(p => fetch('/api/preguntes', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: p.id, ordre: p.ordre }) }))
-  }
+  const pesLabel = pes === 'intens' ? '🔴' : pes === 'normal' ? '🟡' : '🟢'
 
   return (
     <div ref={setNodeRef} style={style} className="border-t border-finomik-light2/60 group/sub">
@@ -225,53 +149,45 @@ function SortableSubtema({ subtema, preguntes, contenidoStatus, retosStatus, onS
           </button>
           <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-2 flex-1 text-left min-w-0">
             <span className="text-finomik-mid3 text-xs w-3 shrink-0">{expanded ? '▼' : '▶'}</span>
+            <span title={pes} className="shrink-0 text-xs">{pesLabel}</span>
             <span className="text-sm font-medium text-finomik-blue truncate">{subtema.nom}</span>
             <div className="flex items-center gap-1.5 shrink-0">
               {tieneRetos && <span className="bg-finomik-gold/20 text-finomik-blue text-xs font-bold px-2 py-0.5 rounded-full">Reptes ✓</span>}
               {tieneContenido && <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-0.5 rounded-full">Contingut ✓</span>}
-              {!tieneContenido && !tieneRetos && <span className="bg-finomik-light2 text-finomik-mid3 text-xs font-bold px-2 py-0.5 rounded-full">{preguntes.length} preg.</span>}
+              {!tieneContenido && !tieneRetos && <span className="bg-finomik-light2 text-finomik-mid3 text-xs font-bold px-2 py-0.5 rounded-full">Pendent</span>}
             </div>
           </button>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          {expanded && (
-            <button onClick={() => onAddPregunta(subtema)} className="text-finomik-blue text-xs font-extrabold hover:text-finomik-mid1 transition">+ Pregunta</button>
-          )}
+          <button
+            onClick={() => onSelectSubtema({ modulo: subtema.modulo, leccion: subtema.leccion, subtema: subtema.nom, pes })}
+            className="text-finomik-blue text-xs font-extrabold hover:text-finomik-mid1 transition px-2 py-1 rounded-lg hover:bg-finomik-blue/10"
+          >
+            {tieneContenido ? '→ Veure' : '→ Generar'}
+          </button>
           <button onClick={onDeleteSubtema} className="text-red-300 hover:text-red-500 text-xs font-bold transition opacity-0 group-hover/sub:opacity-100">Eliminar</button>
         </div>
       </div>
 
       {expanded && (
-        <div className="bg-finomik-light2/5">
-          {preguntes.length === 0 && (
-            <p className="px-10 py-3 text-xs text-finomik-mid3 italic">Sense preguntes. Afegeix-ne una.</p>
-          )}
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={preguntes.map(p => p.id)} strategy={verticalListSortingStrategy}>
-              {preguntes.map(p => (
-                <SortablePregunta
-                  key={p.id}
-                  pregunta={p}
-                  hasContent={hasContent(p.ordre)}
-                  hasRetos={hasRetos(p.ordre)}
-                  onSelect={() => onSelectSubtema({ modulo: p.modulo, leccion: p.leccion, subtema: p.subtema, pregunta_numero: p.ordre, pregunta_texto: p.text })}
-                  onDelete={() => onDeletePregunta(p)}
-                  onRefresh={onRefresh}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
-        </div>
+        <SubtemaDetail
+          modulo={subtema.modulo}
+          leccion={subtema.leccion}
+          subtema={subtema.nom}
+          onSelect={() => onSelectSubtema({ modulo: subtema.modulo, leccion: subtema.leccion, subtema: subtema.nom, pes })}
+          onRefresh={onRefresh}
+        />
       )}
     </div>
   )
 }
 
 // ── Sortable Leccio ────────────────────────────────────────────────────────
-function SortableLeccio({ leccio, subtemes, preguntes, contenidoStatus, retosStatus, onSelectSubtema, onDeleteLeccio, onRefresh, onAddSubtema, onDeleteSubtema, onAddPregunta, onDeletePregunta, onReorderSubtemes, onReorderPreguntes }: {
+function SortableLeccio({ leccio, leccioIndex, totalLeccions, subtemes, contenidoStatus, retosStatus, onSelectSubtema, onDeleteLeccio, onRefresh, onAddSubtema, onDeleteSubtema, onReorderSubtemes }: {
   leccio: Leccio
+  leccioIndex: number
+  totalLeccions: number
   subtemes: Subtema[]
-  preguntes: Pregunta[]
   contenidoStatus: ContenidoStatus[]
   retosStatus: RetosStatus[]
   onSelectSubtema: Props['onSelectSubtema']
@@ -279,16 +195,14 @@ function SortableLeccio({ leccio, subtemes, preguntes, contenidoStatus, retosSta
   onRefresh: () => void
   onAddSubtema: (leccio: Leccio) => void
   onDeleteSubtema: (s: Subtema) => void
-  onAddPregunta: (s: Subtema) => void
-  onDeletePregunta: (p: Pregunta) => void
   onReorderSubtemes: (leccioId: string, newOrder: Subtema[]) => void
-  onReorderPreguntes: (subtemaId: string, newOrder: Pregunta[]) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: leccio.id })
   const [collapsed, setCollapsed] = useState(false)
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
+  const pes = derivarPes(leccio.nom, totalLeccions, leccioIndex)
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
@@ -332,15 +246,12 @@ function SortableLeccio({ leccio, subtemes, preguntes, contenidoStatus, retosSta
                 <SortableSubtema
                   key={s.id}
                   subtema={s}
-                  preguntes={preguntes.filter(p => p.subtema === s.nom && p.leccion === s.leccion && p.modulo === s.modulo)}
+                  pes={pes}
                   contenidoStatus={contenidoStatus}
                   retosStatus={retosStatus}
                   onSelectSubtema={onSelectSubtema}
                   onDeleteSubtema={() => onDeleteSubtema(s)}
                   onRefresh={onRefresh}
-                  onAddPregunta={onAddPregunta}
-                  onDeletePregunta={onDeletePregunta}
-                  onReorderPreguntes={onReorderPreguntes}
                 />
               ))}
             </div>
@@ -384,15 +295,13 @@ export default function IndiceView({ onSelectSubtema }: Props) {
   const [moduls, setModuls]       = useState<Modul[]>([])
   const [leccions, setLeccions]   = useState<Leccio[]>([])
   const [subtemes, setSubtemes]   = useState<Subtema[]>([])
-  const [preguntes, setPreguntes] = useState<Pregunta[]>([])
   const [contenidoStatus, setContenidoStatus] = useState<ContenidoStatus[]>([])
   const [retosStatus, setRetosStatus]         = useState<RetosStatus[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Modal state
   const [modal, setModal] = useState<{
-    type: 'modul' | 'leccio' | 'subtema' | 'pregunta'
-    context?: { modulId?: string; modulNom?: string; leccioId?: string; leccioNom?: string; subtemaId?: string; subtemaNom?: string }
+    type: 'modul' | 'leccio' | 'subtema'
+    context?: { modulId?: string; modulNom?: string; leccioId?: string; leccioNom?: string }
     saving: boolean
   } | null>(null)
 
@@ -408,22 +317,20 @@ export default function IndiceView({ onSelectSubtema }: Props) {
       setModuls(d.moduls ?? [])
       setLeccions(d.leccions ?? [])
       setSubtemes(d.subtemes ?? [])
-      setPreguntes(d.preguntes ?? [])
     }
     if (contenidoRes.ok) {
       const d = await contenidoRes.json()
-      setContenidoStatus((d.data ?? []).map((c: ContenidoStatus) => ({ modulo: c.modulo, leccion: c.leccion, subtema: c.subtema, pregunta_numero: c.pregunta_numero, id: c.id })))
+      setContenidoStatus((d.data ?? []).map((c: ContenidoStatus) => ({ modulo: c.modulo, leccion: c.leccion, subtema: c.subtema, id: c.id })))
     }
     if (retosRes.ok) {
       const d = await retosRes.json()
-      setRetosStatus((d.data ?? []).map((r: RetosStatus) => ({ modulo: r.modulo, leccion: r.leccion, subtema: r.subtema, pregunta_numero: r.pregunta_numero })))
+      setRetosStatus((d.data ?? []).map((r: RetosStatus) => ({ modulo: r.modulo, leccion: r.leccion, subtema: r.subtema })))
     }
     setLoading(false)
   }, [])
 
   useEffect(() => { fetchAll() }, [fetchAll])
 
-  // ── Reorder handlers ───────────────────────────────────────────────────
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
   function handleReorderModuls(event: DragEndEvent) {
@@ -441,14 +348,11 @@ export default function IndiceView({ onSelectSubtema }: Props) {
   function handleReorderLeccions(modulId: string, event: DragEndEvent) {
     const { active, over } = event
     if (!over || active.id === over.id) return
+    void modulId
     setLeccions(prev => {
-      const modulLeccions = prev.filter(l => l.id === active.id || l.id === over.id || prev.find(ll => ll.modulo === prev.find(lll => lll.id === active.id as string)?.modulo && ll.id === l.id))
-      void modulId
       const oldIdx = prev.findIndex(l => l.id === active.id)
       const newIdx = prev.findIndex(l => l.id === over.id)
-      void modulLeccions
       const reordered = arrayMove(prev, oldIdx, newIdx)
-      // Recalculate ordre within same modulo
       const modulNom = prev.find(l => l.id === active.id as string)?.modulo
       let order = 0
       const result = reordered.map(l => {
@@ -468,15 +372,6 @@ export default function IndiceView({ onSelectSubtema }: Props) {
     })
   }
 
-  function handleReorderPreguntes(subtemaId: string, newOrder: Pregunta[]) {
-    setPreguntes(prev => {
-      const s = subtemes.find(st => st.id === subtemaId)
-      if (!s) return prev
-      return prev.filter(p => !(p.subtema === s.nom && p.leccion === s.leccion && p.modulo === s.modulo)).concat(newOrder)
-    })
-  }
-
-  // ── Save handlers ──────────────────────────────────────────────────────
   async function saveModul(nom: string) {
     setModal(prev => prev ? { ...prev, saving: true } : null)
     const ordre = moduls.length
@@ -509,26 +404,12 @@ export default function IndiceView({ onSelectSubtema }: Props) {
     setModal(null)
   }
 
-  async function savePregunta(text: string) {
-    if (!modal?.context?.modulNom || !modal?.context?.leccioNom || !modal?.context?.subtemaNom) return
-    setModal(prev => prev ? { ...prev, saving: true } : null)
-    const modulo = modal.context.modulNom
-    const leccion = modal.context.leccioNom
-    const subtema = modal.context.subtemaNom
-    const ordre = preguntes.filter(p => p.modulo === modulo && p.leccion === leccion && p.subtema === subtema).length + 1
-    const res = await fetch('/api/preguntes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ modulo, leccion, subtema, text, ordre }) })
-    const d = await res.json()
-    if (d.data) setPreguntes(prev => [...prev, d.data])
-    setModal(null)
-  }
-
   async function deleteModul(m: Modul) {
     if (!confirm(`Eliminar el mòdul "${m.nom}" i tot el seu contingut?`)) return
     await fetch('/api/moduls', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: m.id, nom: m.nom }) })
     setModuls(prev => prev.filter(x => x.id !== m.id))
     setLeccions(prev => prev.filter(l => l.modulo !== m.nom))
     setSubtemes(prev => prev.filter(s => s.modulo !== m.nom))
-    setPreguntes(prev => prev.filter(p => p.modulo !== m.nom))
   }
 
   async function deleteLeccio(l: Leccio) {
@@ -536,23 +417,14 @@ export default function IndiceView({ onSelectSubtema }: Props) {
     await fetch('/api/leccions', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: l.id, modulo: l.modulo, nom: l.nom }) })
     setLeccions(prev => prev.filter(x => x.id !== l.id))
     setSubtemes(prev => prev.filter(s => !(s.modulo === l.modulo && s.leccion === l.nom)))
-    setPreguntes(prev => prev.filter(p => !(p.modulo === l.modulo && p.leccion === l.nom)))
   }
 
   async function deleteSubtema(s: Subtema) {
     if (!confirm(`Eliminar el subtema "${s.nom}"?`)) return
     await fetch('/api/subtemes', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: s.id, modulo: s.modulo, leccion: s.leccion, nom: s.nom }) })
     setSubtemes(prev => prev.filter(x => x.id !== s.id))
-    setPreguntes(prev => prev.filter(p => !(p.modulo === s.modulo && p.leccion === s.leccion && p.subtema === s.nom)))
   }
 
-  async function deletePregunta(p: Pregunta) {
-    if (!confirm(`Eliminar la pregunta "${p.text}"?`)) return
-    await fetch('/api/preguntes', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: p.id }) })
-    setPreguntes(prev => prev.filter(x => x.id !== p.id))
-  }
-
-  // ── Render ─────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="flex flex-col gap-3 animate-pulse p-6 max-w-4xl mx-auto w-full">
@@ -565,11 +437,10 @@ export default function IndiceView({ onSelectSubtema }: Props) {
 
   return (
     <div className="flex flex-col gap-6 p-6 max-w-4xl mx-auto w-full">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-black text-finomik-blue text-xl">Índex del curs</h2>
-          <p className="text-finomik-mid3 text-sm mt-0.5">{moduls.length} mòduls · {subtemes.length} subtemes · {preguntes.length} preguntes</p>
+          <p className="text-finomik-mid3 text-sm mt-0.5">{moduls.length} mòduls · {subtemes.length} subtemes</p>
         </div>
         <button
           onClick={() => setModal({ type: 'modul', saving: false })}
@@ -582,63 +453,56 @@ export default function IndiceView({ onSelectSubtema }: Props) {
       {moduls.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
           <div className="text-5xl">📚</div>
-          <p className="font-extrabold text-finomik-blue text-lg">L'índex és buit</p>
+          <p className="font-extrabold text-finomik-blue text-lg">L&apos;índex és buit</p>
           <p className="text-finomik-mid3 text-sm max-w-xs">Comença afegint el primer mòdul del curs.</p>
         </div>
       )}
 
-      {/* Moduls list with DnD */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleReorderModuls}>
         <SortableContext items={moduls.map(m => m.id)} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col gap-3">
             {moduls.map(modul => {
               const modulLeccions = leccions.filter(l => l.modulo === modul.nom)
-              return <SortableModul
-                key={modul.id}
-                modul={modul}
-                leccions={modulLeccions}
-                subtemes={subtemes}
-                preguntes={preguntes}
-                contenidoStatus={contenidoStatus}
-                retosStatus={retosStatus}
-                onSelectSubtema={onSelectSubtema}
-                onDeleteModul={() => deleteModul(modul)}
-                onAddLeccio={() => setModal({ type: 'leccio', context: { modulNom: modul.nom }, saving: false })}
-                onDeleteLeccio={deleteLeccio}
-                onAddSubtema={(l) => setModal({ type: 'subtema', context: { modulNom: modul.nom, leccioNom: l.nom }, saving: false })}
-                onDeleteSubtema={deleteSubtema}
-                onAddPregunta={(s) => setModal({ type: 'pregunta', context: { modulNom: s.modulo, leccioNom: s.leccion, subtemaNom: s.nom }, saving: false })}
-                onDeletePregunta={deletePregunta}
-                onRefresh={fetchAll}
-                onReorderLeccions={(e) => handleReorderLeccions(modul.id, e)}
-                onReorderSubtemes={handleReorderSubtemes}
-                onReorderPreguntes={handleReorderPreguntes}
-              />
+              return (
+                <SortableModul
+                  key={modul.id}
+                  modul={modul}
+                  leccions={modulLeccions}
+                  subtemes={subtemes}
+                  contenidoStatus={contenidoStatus}
+                  retosStatus={retosStatus}
+                  onSelectSubtema={onSelectSubtema}
+                  onDeleteModul={() => deleteModul(modul)}
+                  onAddLeccio={() => setModal({ type: 'leccio', context: { modulNom: modul.nom }, saving: false })}
+                  onDeleteLeccio={deleteLeccio}
+                  onAddSubtema={(l) => setModal({ type: 'subtema', context: { modulNom: modul.nom, leccioNom: l.nom }, saving: false })}
+                  onDeleteSubtema={deleteSubtema}
+                  onRefresh={fetchAll}
+                  onReorderLeccions={(e) => handleReorderLeccions(modul.id, e)}
+                  onReorderSubtemes={handleReorderSubtemes}
+                />
+              )
             })}
           </div>
         </SortableContext>
       </DndContext>
 
-      {/* Modal */}
       {modal && (
         <AddModal
           title={
             modal.type === 'modul' ? 'Nou mòdul' :
             modal.type === 'leccio' ? `Nova lliçó — ${modal.context?.modulNom}` :
-            modal.type === 'subtema' ? `Nou subtema — ${modal.context?.leccioNom}` :
-            `Nova pregunta — ${modal.context?.subtemaNom}`
+            `Nou subtema — ${modal.context?.leccioNom}`
           }
           placeholder={
             modal.type === 'modul' ? 'Ex: Mòdul 1 — Els diners i jo' :
             modal.type === 'leccio' ? 'Ex: 1. Diners' :
-            modal.type === 'subtema' ? 'Ex: 1.1 Per què existeix el diner?' :
-            'Ex: Quina diferència hi ha entre necessitat i desig?'
+            'Ex: 1.1 Per què existeix el diner?'
           }
           onSave={
             modal.type === 'modul' ? saveModul :
             modal.type === 'leccio' ? saveLeccio :
-            modal.type === 'subtema' ? saveSubtema :
-            savePregunta
+            saveSubtema
           }
           onCancel={() => setModal(null)}
           saving={modal.saving}
@@ -649,11 +513,10 @@ export default function IndiceView({ onSelectSubtema }: Props) {
 }
 
 // ── Sortable Modul ─────────────────────────────────────────────────────────
-function SortableModul({ modul, leccions, subtemes, preguntes, contenidoStatus, retosStatus, onSelectSubtema, onDeleteModul, onAddLeccio, onDeleteLeccio, onAddSubtema, onDeleteSubtema, onAddPregunta, onDeletePregunta, onRefresh, onReorderLeccions, onReorderSubtemes, onReorderPreguntes }: {
+function SortableModul({ modul, leccions, subtemes, contenidoStatus, retosStatus, onSelectSubtema, onDeleteModul, onAddLeccio, onDeleteLeccio, onAddSubtema, onDeleteSubtema, onRefresh, onReorderLeccions, onReorderSubtemes }: {
   modul: Modul
   leccions: Leccio[]
   subtemes: Subtema[]
-  preguntes: Pregunta[]
   contenidoStatus: ContenidoStatus[]
   retosStatus: RetosStatus[]
   onSelectSubtema: Props['onSelectSubtema']
@@ -662,12 +525,9 @@ function SortableModul({ modul, leccions, subtemes, preguntes, contenidoStatus, 
   onDeleteLeccio: (l: Leccio) => void
   onAddSubtema: (l: Leccio) => void
   onDeleteSubtema: (s: Subtema) => void
-  onAddPregunta: (s: Subtema) => void
-  onDeletePregunta: (p: Pregunta) => void
   onRefresh: () => void
   onReorderLeccions: (e: DragEndEvent) => void
   onReorderSubtemes: (leccioId: string, newOrder: Subtema[]) => void
-  onReorderPreguntes: (subtemaId: string, newOrder: Pregunta[]) => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: modul.id })
   const [collapsed, setCollapsed] = useState(false)
@@ -701,12 +561,13 @@ function SortableModul({ modul, leccions, subtemes, preguntes, contenidoStatus, 
               {leccions.length === 0 && (
                 <p className="px-5 py-3 text-xs text-finomik-mid3 italic">Sense lliçons.</p>
               )}
-              {leccions.map(leccio => (
+              {leccions.map((leccio, idx) => (
                 <SortableLeccio
                   key={leccio.id}
                   leccio={leccio}
+                  leccioIndex={idx}
+                  totalLeccions={leccions.length}
                   subtemes={subtemes.filter(s => s.modulo === modul.nom && s.leccion === leccio.nom)}
-                  preguntes={preguntes}
                   contenidoStatus={contenidoStatus}
                   retosStatus={retosStatus}
                   onSelectSubtema={onSelectSubtema}
@@ -714,10 +575,7 @@ function SortableModul({ modul, leccions, subtemes, preguntes, contenidoStatus, 
                   onRefresh={onRefresh}
                   onAddSubtema={onAddSubtema}
                   onDeleteSubtema={onDeleteSubtema}
-                  onAddPregunta={onAddPregunta}
-                  onDeletePregunta={onDeletePregunta}
                   onReorderSubtemes={onReorderSubtemes}
-                  onReorderPreguntes={onReorderPreguntes}
                 />
               ))}
             </div>

@@ -10,6 +10,7 @@ interface SelectedSubtema {
   modulo: string
   leccion: string
   subtema: string
+  pes: 'lleuger' | 'normal' | 'intens'
 }
 
 interface Props {
@@ -48,9 +49,23 @@ export default function SubtemaSelector({ onSelect, label }: Props) {
   function handleLeccionChange(l: string) {
     setSelectedLeccion(l); setSelectedSubtema('')
   }
+  function derivarPes(blocNom: string, totalBlocs: number, blocIndex: number): 'lleuger' | 'normal' | 'intens' {
+    const nom = blocNom.toLowerCase()
+    if (blocIndex === 0) return 'lleuger'
+    if (blocIndex >= totalBlocs - 1) return 'normal'
+    if (/eina|product|invers|nòmina|impost|contrac|mercat|simulad/.test(nom)) return 'intens'
+    if (/hàbit|consolidar|reflexi|construir|aprendr/.test(nom)) return 'lleuger'
+    return 'normal'
+  }
+
   function handleSubtemaChange(nom: string) {
     setSelectedSubtema(nom)
-    if (nom) onSelect({ modulo: selectedModulo, leccion: selectedLeccion, subtema: nom })
+    if (nom) {
+      const totalBlocs = filteredLeccions.length
+      const blocIndex = filteredLeccions.findIndex(l => l.nom === selectedLeccion)
+      const pes = derivarPes(selectedLeccion, totalBlocs, blocIndex)
+      onSelect({ modulo: selectedModulo, leccion: selectedLeccion, subtema: nom, pes })
+    }
   }
 
   return (

@@ -16,6 +16,7 @@ interface SubtemaSeleccionado {
   modulo: string
   leccion: string
   subtema: string
+  pes: 'lleuger' | 'normal' | 'intens'
 }
 
 export default function HomePage() {
