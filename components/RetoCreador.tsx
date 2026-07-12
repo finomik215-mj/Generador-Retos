@@ -7,15 +7,13 @@ interface Props {
   modulo: string
   leccion: string
   subtema: string
-  pregunta_numero: number
-  pregunta_texto: string
   onGuardado: () => void
   onCancel?: () => void
 }
 
 const ICONS = ['🎯', '💰', '📋', '⚡', '🌪️', '⏳', '✅', '✏️', '🔗', '🔢', '⏱️', '🔮', '📖']
 
-export default function RetoCreador({ modulo, leccion, subtema, pregunta_numero, pregunta_texto, onGuardado, onCancel }: Props) {
+export default function RetoCreador({ modulo, leccion, subtema, onGuardado, onCancel }: Props) {
   const [selectedTemplate, setSelectedTemplate] = useState<RetoTemplate | null>(null)
   const [formData, setFormData] = useState<Record<string, string>>({})
   const [guardando, setGuardando] = useState(false)
@@ -45,8 +43,6 @@ export default function RetoCreador({ modulo, leccion, subtema, pregunta_numero,
         modulo,
         leccion,
         subtema,
-        pregunta_numero,
-        pregunta_texto,
         tipo_reto: selectedTemplate.nombre,
         datos: formData,
         aprobado: true,

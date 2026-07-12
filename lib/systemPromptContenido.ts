@@ -120,9 +120,9 @@ function calcularParaules(
   if (palabrasTarget) return palabrasTarget
 
   const BASE: Record<'lleuger' | 'normal' | 'intens', number> = {
-    lleuger: 230,
-    normal: 360,
-    intens: 450,
+    lleuger: 650,
+    normal: 1000,
+    intens: 1300,
   }
   const factor = FACTOR_PER_MODUL[nomModul] ?? 1.0
   return Math.round(BASE[pes] * factor / 10) * 10

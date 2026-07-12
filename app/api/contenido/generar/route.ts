@@ -18,12 +18,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No autoritzat' }, { status: 401 })
   }
 
-  const { modulo, leccion, subtema, pregunta_numero, pregunta_texto, palabras } = await req.json() as {
-    modulo: string; leccion: string; subtema: string
-    pregunta_numero: number; pregunta_texto: string; palabras?: number
+  const { modulo, leccion, subtema, palabras } = await req.json() as {
+    modulo: string; leccion: string; subtema: string; palabras?: number
   }
 
-  if (!modulo?.trim() || !leccion?.trim() || !subtema?.trim() || !pregunta_texto?.trim()) {
+  if (!modulo?.trim() || !leccion?.trim() || !subtema?.trim()) {
     return NextResponse.json({ error: 'Falten camps obligatoris' }, { status: 400 })
   }
 
@@ -53,17 +52,16 @@ export async function POST(req: NextRequest) {
   }
 
   const historial = historialData?.map(row =>
-    `[${row.leccion} > ${row.subtema} > Pregunta ${row.pregunta_numero}: ${row.pregunta_texto}]\n${row.contenido}`
+    `[${row.leccion} > ${row.subtema}]\n${row.contenido}`
   ).join('\n\n---\n\n') ?? ''
 
   const systemPrompt = getSystemPromptContenido(historial, modulContext, palabras)
 
-  const userMessage = `Escriu el contingut educatiu per a aquest subtema i pregunta concreta.
+  const userMessage = `Escriu el contingut educatiu complet per a aquest subtema.
 
 Modul: ${modulo}
-Llico / Bloc: ${leccion}
+Bloc: ${leccion}
 Subtema: ${subtema}
-Pregunta que ha de respondre el contingut: ${pregunta_texto}
 
 Analitza el tema, escull el format mes adequat i escriu el contingut. Text fluid en paragrafs, sense activitats ni exercicis (els reptes es generen per separat). Llest per inserir al curs.`
 

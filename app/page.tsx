@@ -16,24 +16,13 @@ interface SubtemaSeleccionado {
   modulo: string
   leccion: string
   subtema: string
-  pregunta_numero: number
-  pregunta_texto: string
-}
-
-interface RetosMeta {
-  modulo: string
-  leccion: string
-  subtema: string
-  pregunta_numero: number
-  pregunta_texto: string
 }
 
 export default function HomePage() {
   const [tab, setTab] = useState<Tab>('indice')
 
   const [selectedSubtema, setSelectedSubtema] = useState<SubtemaSeleccionado | null>(null)
-  const [retosInput, setRetosInput] = useState('')
-  const [retosMeta, setRetosMeta] = useState<RetosMeta | null>(null)
+  const [retosMeta, setRetosMeta] = useState<SubtemaSeleccionado | null>(null)
 
   const [content, setContent] = useState('')
   const [recommended, setRecommended] = useState(true)
@@ -54,8 +43,7 @@ export default function HomePage() {
     setTab('contenido')
   }
 
-  function handleGenerarRetos(contenido: string, meta: RetosMeta) {
-    setRetosInput(contenido)
+  function handleGenerarRetos(contenido: string, meta: SubtemaSeleccionado) {
     setRetosMeta(meta)
     setContent(contenido)
     setOutput('')
@@ -67,27 +55,20 @@ export default function HomePage() {
     setIndiceKey(k => k + 1)
   }
 
-  async function handleRetosSubtemaSelect(item: { modulo: string; leccion: string; subtema: string; pregunta_numero: number; pregunta_texto: string }) {
-    setRetosSubtemaLabel(`${item.subtema} — Pregunta ${item.pregunta_numero}`)
+  async function handleRetosSubtemaSelect(item: SubtemaSeleccionado) {
+    setRetosSubtemaLabel(item.subtema)
     setRetosSubtemaNoContenido(false)
     const params = new URLSearchParams({
       modulo: item.modulo,
       leccion: item.leccion,
       subtema: item.subtema,
-      pregunta_numero: String(item.pregunta_numero),
     })
     const res = await fetch(`/api/contenido/obtener?${params}`)
     if (!res.ok) return
     const data = await res.json()
     if (data.data?.contenido) {
       setContent(data.data.contenido)
-      setRetosMeta({
-        modulo: item.modulo,
-        leccion: item.leccion,
-        subtema: item.subtema,
-        pregunta_numero: item.pregunta_numero,
-        pregunta_texto: item.pregunta_texto,
-      })
+      setRetosMeta(item)
     } else {
       setRetosSubtemaNoContenido(true)
     }
@@ -138,8 +119,6 @@ export default function HomePage() {
         modulo: retosMeta.modulo,
         leccion: retosMeta.leccion,
         subtema: retosMeta.subtema,
-        pregunta_numero: retosMeta.pregunta_numero,
-        pregunta_texto: retosMeta.pregunta_texto,
         tipo_reto: 'Generat per Claude',
         datos: { raw: output },
         aprobado: false,
@@ -200,7 +179,7 @@ export default function HomePage() {
         <main className="flex-1 flex flex-col lg:flex-row gap-0 overflow-hidden">
           <aside className="w-full lg:w-2/5 border-r border-finomik-light2 p-6 flex flex-col gap-6 overflow-y-auto">
             <SubtemaSelector
-              label="Carregar contingut d'una pregunta"
+              label="Carregar contingut d'un subtema"
               onSelect={handleRetosSubtemaSelect}
             />
             {retosSubtemaLabel && !retosSubtemaNoContenido && (
@@ -210,7 +189,7 @@ export default function HomePage() {
             )}
             {retosSubtemaNoContenido && (
               <p className="text-xs text-finomik-mid3 bg-finomik-light2/40 border border-finomik-light2 rounded-xl px-3 py-2">
-                Aquesta pregunta encara no té contingut aprovat.
+                Aquest subtema encara no té contingut aprovat.
               </p>
             )}
             <ContentInput value={content} onChange={setContent} disabled={loadingRetos} />

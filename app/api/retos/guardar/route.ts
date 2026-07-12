@@ -7,24 +7,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No autoritzat' }, { status: 401 })
   }
 
-  const { modulo, leccion, subtema, pregunta_numero, pregunta_texto, tipo_reto, datos, aprobado } = await req.json() as {
+  const { modulo, leccion, subtema, tipo_reto, datos, aprobado } = await req.json() as {
     modulo: string
     leccion: string
     subtema: string
-    pregunta_numero: number
-    pregunta_texto: string
     tipo_reto: string
     datos: Record<string, unknown>
     aprobado?: boolean
   }
 
-  if (!modulo || !leccion || !subtema || pregunta_numero == null || !pregunta_texto || !tipo_reto || !datos) {
+  if (!modulo || !leccion || !subtema || !tipo_reto || !datos) {
     return NextResponse.json({ error: 'Falten camps' }, { status: 400 })
   }
 
   const { data, error } = await supabase
     .from('retos_guardados')
-    .insert({ modulo, leccion, subtema, pregunta_numero, pregunta_texto, tipo_reto, datos, aprobado: aprobado ?? false })
+    .insert({ modulo, leccion, subtema, tipo_reto, datos, aprobado: aprobado ?? false })
     .select('id')
     .single()
 

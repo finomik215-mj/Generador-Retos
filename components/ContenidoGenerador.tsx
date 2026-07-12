@@ -4,25 +4,23 @@ import { useState, useEffect, useCallback } from 'react'
 import SubtemaSelector from './SubtemaSelector'
 import RetoCreador from './RetoCreador'
 
-interface PreloadedQuestion {
+interface ActiveSubtema {
   modulo: string
   leccion: string
   subtema: string
-  pregunta_numero: number
-  pregunta_texto: string
 }
 
 interface Props {
-  preloaded?: PreloadedQuestion | null
+  preloaded?: ActiveSubtema | null
   onAprobado: () => void
   onGenerarRetos: (
     contenido: string,
-    meta: { modulo: string; leccion: string; subtema: string; pregunta_numero: number; pregunta_texto: string }
+    meta: ActiveSubtema
   ) => void
 }
 
 export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRetos }: Props) {
-  const [palabras, setPalabras] = useState(250)
+  const [palabras, setPalabras] = useState(800)
   const [output, setOutput] = useState('')
   const [editado, setEditado] = useState('')
   const [loading, setLoading] = useState(false)
@@ -32,10 +30,10 @@ export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRet
   const [copied, setCopied] = useState(false)
   const [showRetoCreador, setShowRetoCreador] = useState(false)
 
-  const [activePregunta, setActivePregunta] = useState<PreloadedQuestion | null>(preloaded ?? null)
+  const [activeSubtema, setActiveSubtema] = useState<ActiveSubtema | null>(preloaded ?? null)
 
   useEffect(() => {
-    if (preloaded) setActivePregunta(preloaded)
+    if (preloaded) setActiveSubtema(preloaded)
   }, [preloaded])
 
   useEffect(() => {
@@ -44,15 +42,10 @@ export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRet
     setError('')
     setAprobado(false)
     setShowRetoCreador(false)
-  }, [activePregunta?.subtema, activePregunta?.leccion, activePregunta?.modulo, activePregunta?.pregunta_numero])
+  }, [activeSubtema?.subtema, activeSubtema?.leccion, activeSubtema?.modulo])
 
-  const loadExistingContent = useCallback(async (p: PreloadedQuestion) => {
-    const params = new URLSearchParams({
-      modulo: p.modulo,
-      leccion: p.leccion,
-      subtema: p.subtema,
-      pregunta_numero: String(p.pregunta_numero),
-    })
+  const loadExistingContent = useCallback(async (s: ActiveSubtema) => {
+    const params = new URLSearchParams({ modulo: s.modulo, leccion: s.leccion, subtema: s.subtema })
     const res = await fetch(`/api/contenido/obtener?${params}`)
     if (!res.ok) return
     const data = await res.json()
@@ -63,19 +56,18 @@ export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRet
   }, [])
 
   useEffect(() => {
-    if (activePregunta) loadExistingContent(activePregunta)
-  }, [activePregunta, loadExistingContent])
+    if (activeSubtema) loadExistingContent(activeSubtema)
+  }, [activeSubtema, loadExistingContent])
 
   const textoActual = editado || output
 
-  const canGenerate = activePregunta &&
-    activePregunta.modulo.trim() &&
-    activePregunta.leccion.trim() &&
-    activePregunta.subtema.trim() &&
-    activePregunta.pregunta_texto.trim()
+  const canGenerate = activeSubtema &&
+    activeSubtema.modulo.trim() &&
+    activeSubtema.leccion.trim() &&
+    activeSubtema.subtema.trim()
 
   async function handleGenerar() {
-    if (!activePregunta) return
+    if (!activeSubtema) return
     setLoading(true)
     setOutput('')
     setEditado('')
@@ -86,11 +78,9 @@ export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRet
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        modulo: activePregunta.modulo,
-        leccion: activePregunta.leccion,
-        subtema: activePregunta.subtema,
-        pregunta_numero: activePregunta.pregunta_numero,
-        pregunta_texto: activePregunta.pregunta_texto,
+        modulo: activeSubtema.modulo,
+        leccion: activeSubtema.leccion,
+        subtema: activeSubtema.subtema,
         palabras,
       }),
     })
@@ -114,18 +104,16 @@ export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRet
   }
 
   async function handleAprobar() {
-    if (!activePregunta) return
+    if (!activeSubtema) return
     setAprobando(true)
     setError('')
     const res = await fetch('/api/contenido/aprobar', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        modulo: activePregunta.modulo,
-        leccion: activePregunta.leccion,
-        subtema: activePregunta.subtema,
-        pregunta_numero: activePregunta.pregunta_numero,
-        pregunta_texto: activePregunta.pregunta_texto,
+        modulo: activeSubtema.modulo,
+        leccion: activeSubtema.leccion,
+        subtema: activeSubtema.subtema,
         contenido: textoActual,
       }),
     })
@@ -146,14 +134,8 @@ export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRet
   }
 
   function handleGenerarRetos() {
-    if (!activePregunta) return
-    onGenerarRetos(textoActual, {
-      modulo: activePregunta.modulo,
-      leccion: activePregunta.leccion,
-      subtema: activePregunta.subtema,
-      pregunta_numero: activePregunta.pregunta_numero,
-      pregunta_texto: activePregunta.pregunta_texto,
-    })
+    if (!activeSubtema) return
+    onGenerarRetos(textoActual, activeSubtema)
   }
 
   const wordCount = textoActual.trim().split(/\s+/).filter(Boolean).length
@@ -163,26 +145,26 @@ export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRet
       {/* Left panel */}
       <aside className="w-full lg:w-2/5 border-r border-finomik-light2 p-6 flex flex-col gap-5 overflow-y-auto">
         <SubtemaSelector
-          label="Seleccionar pregunta"
-          onSelect={(item) => setActivePregunta(item)}
+          label="Seleccionar subtema"
+          onSelect={(item) => setActiveSubtema(item)}
         />
 
-        {!activePregunta && (
+        {!activeSubtema && (
           <div className="flex flex-col items-center justify-center py-10 gap-3 text-center">
             <div className="text-4xl">✍️</div>
-            <p className="font-extrabold text-finomik-blue text-base">Selecciona una pregunta</p>
+            <p className="font-extrabold text-finomik-blue text-base">Selecciona un subtema</p>
             <p className="text-finomik-mid3 text-sm max-w-xs">
-              Utilitza el selector de dalt o vés a l'índex i fes clic en una pregunta.
+              Utilitza el selector de dalt o vés a l'índex i fes clic en un subtema.
             </p>
           </div>
         )}
 
-        {activePregunta && (
+        {activeSubtema && (
           <div className="flex flex-col gap-3">
             {[
-              { label: 'Mòdul', value: activePregunta.modulo },
-              { label: 'Lliçó', value: activePregunta.leccion },
-              { label: 'Subtema', value: activePregunta.subtema },
+              { label: 'Mòdul', value: activeSubtema.modulo },
+              { label: 'Bloc', value: activeSubtema.leccion },
+              { label: 'Subtema', value: activeSubtema.subtema },
             ].map(({ label, value }) => (
               <div key={label} className="flex flex-col gap-1">
                 <span className="text-xs font-extrabold text-finomik-blue uppercase tracking-wide">{label}</span>
@@ -191,14 +173,6 @@ export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRet
                 </div>
               </div>
             ))}
-            <div className="flex flex-col gap-1">
-              <span className="text-xs font-extrabold text-finomik-blue uppercase tracking-wide">
-                Pregunta {activePregunta.pregunta_numero}
-              </span>
-              <div className="border border-finomik-blue/30 rounded-xl px-4 py-2.5 text-sm text-finomik-blue font-medium bg-finomik-blue/5">
-                {activePregunta.pregunta_texto}
-              </div>
-            </div>
           </div>
         )}
 
@@ -210,9 +184,9 @@ export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRet
           <div className="flex items-center gap-3">
             <input
               type="range"
-              min={100}
-              max={600}
-              step={50}
+              min={300}
+              max={1500}
+              step={100}
               value={palabras}
               onChange={e => setPalabras(Number(e.target.value))}
               disabled={loading}
@@ -258,7 +232,7 @@ export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRet
             {/* Top bar */}
             <div className="flex items-center justify-between shrink-0">
               <p className="text-finomik-mid3 text-sm font-medium">
-                <span className="font-extrabold text-finomik-blue">{wordCount}</span> palabras
+                <span className="font-extrabold text-finomik-blue">{wordCount}</span> paraules
                 {loading && <span className="ml-2 animate-pulse text-xs">generant...</span>}
               </p>
               <div className="flex gap-2">
@@ -302,7 +276,7 @@ export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRet
             </div>
 
             {/* Actions after approval */}
-            {!loading && output && aprobado && activePregunta && (
+            {!loading && output && aprobado && activeSubtema && (
               <div className="flex flex-col gap-3 shrink-0">
                 <div className="bg-finomik-gold/10 border border-finomik-gold rounded-xl px-4 py-3 flex flex-col gap-3">
                   <p className="text-sm font-extrabold text-finomik-blue">Contingut aprovat. Que vols fer ara?</p>
@@ -325,11 +299,9 @@ export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRet
                 {showRetoCreador && (
                   <div className="border border-finomik-light2 rounded-2xl p-5 bg-white">
                     <RetoCreador
-                      modulo={activePregunta.modulo}
-                      leccion={activePregunta.leccion}
-                      subtema={activePregunta.subtema}
-                      pregunta_numero={activePregunta.pregunta_numero}
-                      pregunta_texto={activePregunta.pregunta_texto}
+                      modulo={activeSubtema.modulo}
+                      leccion={activeSubtema.leccion}
+                      subtema={activeSubtema.subtema}
                       onGuardado={() => { setShowRetoCreador(false); onAprobado() }}
                       onCancel={() => setShowRetoCreador(false)}
                     />

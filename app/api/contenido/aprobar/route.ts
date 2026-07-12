@@ -7,16 +7,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No autoritzat' }, { status: 401 })
   }
 
-  const { modulo, leccion, subtema, pregunta_numero, pregunta_texto, contenido } = await req.json() as {
+  const { modulo, leccion, subtema, contenido } = await req.json() as {
     modulo: string
     leccion: string
     subtema: string
-    pregunta_numero: number
-    pregunta_texto: string
     contenido: string
   }
 
-  if (!modulo || !leccion || !subtema || !pregunta_texto || !contenido || pregunta_numero == null) {
+  if (!modulo || !leccion || !subtema || !contenido) {
     return NextResponse.json({ error: 'Falten camps' }, { status: 400 })
   }
 
@@ -25,8 +23,8 @@ export async function POST(req: NextRequest) {
   const { error } = await supabase
     .from('contenido_aprobado')
     .upsert(
-      { modulo, leccion, subtema, pregunta_numero, pregunta_texto, contenido, palabras },
-      { onConflict: 'modulo,leccion,subtema,pregunta_numero' }
+      { modulo, leccion, subtema, contenido, palabras },
+      { onConflict: 'modulo,leccion,subtema' }
     )
 
   if (error) {
