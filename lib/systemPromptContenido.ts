@@ -91,22 +91,41 @@ Quan usar-lo: "Comptes i targetes", "Productes d'inversió", "IBAN i moviments b
 Pots combinar elements de formats si el tema ho demana. El format és una guia, no una presó.`
 
 // ── Word count calculator ──────────────────────────────────────────────────
+//
+// Base calculation: 2h/week × 12 weeks = 24h per module
+// 15% of that = reading time = 216 min × 160 wpm = ~34,560 words per module
+// Distributed by bloc weight (lleuger / normal / intens)
+// Each subtema has ~3 preguntes → word target is per PREGUNTA, not per subtema
+//
+// Per-module factors derived from actual subtema counts:
+//   Mòdul General (32 sub): ~360w/pregunta
+//   Introducció a la Inversió (34 sub): ~340w/pregunta
+//   Vida Adulta (41 sub): ~280w/pregunta   ← more subtemas → shorter each
+//   Emprenedoria (32 sub): ~360w/pregunta
+//   Economia 1r Batxillerat (32 sub): ~360w/pregunta
+
+const FACTOR_PER_MODUL: Record<string, number> = {
+  'Mòdul General': 1.0,
+  'Introducció a la Inversió': 0.94,
+  'Vida Adulta': 0.78,
+  'Emprenedoria': 1.0,
+  'Economia 1r Batxillerat': 1.0,
+}
 
 function calcularParaules(
-  totalSubtemes: number,
+  nomModul: string,
   pes: 'lleuger' | 'normal' | 'intens',
   palabrasTarget?: number,
 ): number {
   if (palabrasTarget) return palabrasTarget
 
   const BASE: Record<'lleuger' | 'normal' | 'intens', number> = {
-    lleuger: 280,
-    normal: 420,
-    intens: 620,
+    lleuger: 230,
+    normal: 360,
+    intens: 450,
   }
-  // Smaller modules → more depth per subtema
-  const factorMida = totalSubtemes <= 15 ? 1.2 : totalSubtemes <= 25 ? 1.0 : 0.85
-  return Math.round(BASE[pes] * factorMida)
+  const factor = FACTOR_PER_MODUL[nomModul] ?? 1.0
+  return Math.round(BASE[pes] * factor / 10) * 10
 }
 
 // ── Main function ──────────────────────────────────────────────────────────
@@ -121,8 +140,8 @@ export function getSystemPromptContenido(
     : FONTS_GENERALS
 
   const targetParaules = modulContext
-    ? calcularParaules(modulContext.totalSubtemes, modulContext.pesBlocActual, palabrasTarget)
-    : (palabrasTarget ?? 400)
+    ? calcularParaules(modulContext.nom, modulContext.pesBlocActual, palabrasTarget)
+    : (palabrasTarget ?? 360)
 
   const contextModul = modulContext
     ? `## Modul i context pedagogic
