@@ -138,8 +138,6 @@ function SortableSubtema({ subtema, pes, contenidoStatus, retosStatus, onSelectS
   const tieneContenido = contenidoStatus.some(c => c.modulo === subtema.modulo && c.leccion === subtema.leccion && c.subtema === subtema.nom)
   const tieneRetos = retosStatus.some(r => r.modulo === subtema.modulo && r.leccion === subtema.leccion && r.subtema === subtema.nom)
 
-  const pesLabel = pes === 'intens' ? '🔴' : pes === 'normal' ? '🟡' : '🟢'
-
   return (
     <div ref={setNodeRef} style={style} className="border-t border-finomik-light2/60 group/sub">
       <div className="flex items-center justify-between px-5 py-3 hover:bg-finomik-light2/20 transition">
@@ -149,7 +147,6 @@ function SortableSubtema({ subtema, pes, contenidoStatus, retosStatus, onSelectS
           </button>
           <button onClick={() => setExpanded(!expanded)} className="flex items-center gap-2 flex-1 text-left min-w-0">
             <span className="text-finomik-mid3 text-xs w-3 shrink-0">{expanded ? '▼' : '▶'}</span>
-            <span title={pes} className="shrink-0 text-xs">{pesLabel}</span>
             <span className="text-sm font-medium text-finomik-blue truncate">{subtema.nom}</span>
             <div className="flex items-center gap-1.5 shrink-0">
               {tieneRetos && <span className="bg-finomik-gold/20 text-finomik-blue text-xs font-bold px-2 py-0.5 rounded-full">Reptes ✓</span>}
