@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
   const modulo = searchParams.get('modulo')
   const leccion = searchParams.get('leccion')
   const subtema = searchParams.get('subtema')
+  const idioma = searchParams.get('idioma') ?? 'ca'
 
   if (!modulo || !leccion || !subtema) return NextResponse.json({ data: null })
 
@@ -18,6 +19,7 @@ export async function GET(req: NextRequest) {
     .eq('modulo', modulo)
     .eq('leccion', leccion)
     .eq('subtema', subtema)
+    .eq('idioma', idioma)
     .single()
 
   return NextResponse.json({ data: data ?? null })

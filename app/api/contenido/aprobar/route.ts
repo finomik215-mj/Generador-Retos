@@ -7,11 +7,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No autoritzat' }, { status: 401 })
   }
 
-  const { modulo, leccion, subtema, contenido } = await req.json() as {
+  const { modulo, leccion, subtema, contenido, idioma = 'ca' } = await req.json() as {
     modulo: string
     leccion: string
     subtema: string
     contenido: string
+    idioma?: string
   }
 
   if (!modulo || !leccion || !subtema || !contenido) {
@@ -23,8 +24,8 @@ export async function POST(req: NextRequest) {
   const { error } = await supabase
     .from('contenido_aprobado')
     .upsert(
-      { modulo, leccion, subtema, contenido, palabras },
-      { onConflict: 'modulo,leccion,subtema' }
+      { modulo, leccion, subtema, contenido, palabras, idioma },
+      { onConflict: 'modulo,leccion,subtema,idioma' }
     )
 
   if (error) {

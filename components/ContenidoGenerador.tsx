@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react'
 import SubtemaSelector from './SubtemaSelector'
 import RetoCreador from './RetoCreador'
 
+type Idioma = 'ca' | 'es' | 'en'
+
 interface ActiveSubtema {
   modulo: string
   leccion: string
@@ -13,14 +15,18 @@ interface ActiveSubtema {
 interface Props {
   preloaded?: ActiveSubtema | null
   onAprobado: () => void
-  onGenerarRetos: (
-    contenido: string,
-    meta: ActiveSubtema
-  ) => void
+  onGenerarRetos: (contenido: string, meta: ActiveSubtema) => void
 }
+
+const IDIOMES: { id: Idioma; label: string }[] = [
+  { id: 'ca', label: 'Català' },
+  { id: 'es', label: 'Castellano' },
+  { id: 'en', label: 'English' },
+]
 
 export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRetos }: Props) {
   const [palabras, setPalabras] = useState(800)
+  const [idioma, setIdioma] = useState<Idioma>('ca')
   const [output, setOutput] = useState('')
   const [editado, setEditado] = useState('')
   const [loading, setLoading] = useState(false)
@@ -31,6 +37,11 @@ export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRet
   const [showRetoCreador, setShowRetoCreador] = useState(false)
 
   const [activeSubtema, setActiveSubtema] = useState<ActiveSubtema | null>(preloaded ?? null)
+
+  const [materialReferencia, setMaterialReferencia] = useState('')
+  const [savingMaterial, setSavingMaterial] = useState(false)
+  const [materialSaved, setMaterialSaved] = useState(false)
+  const [showMaterial, setShowMaterial] = useState(false)
 
   useEffect(() => {
     if (preloaded) setActiveSubtema(preloaded)
@@ -44,8 +55,14 @@ export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRet
     setShowRetoCreador(false)
   }, [activeSubtema?.subtema, activeSubtema?.leccion, activeSubtema?.modulo])
 
-  const loadExistingContent = useCallback(async (s: ActiveSubtema) => {
-    const params = new URLSearchParams({ modulo: s.modulo, leccion: s.leccion, subtema: s.subtema })
+  useEffect(() => {
+    setOutput('')
+    setEditado('')
+    setAprobado(false)
+  }, [idioma])
+
+  const loadExistingContent = useCallback(async (s: ActiveSubtema, lang: Idioma) => {
+    const params = new URLSearchParams({ modulo: s.modulo, leccion: s.leccion, subtema: s.subtema, idioma: lang })
     const res = await fetch(`/api/contenido/obtener?${params}`)
     if (!res.ok) return
     const data = await res.json()
@@ -56,8 +73,34 @@ export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRet
   }, [])
 
   useEffect(() => {
-    if (activeSubtema) loadExistingContent(activeSubtema)
-  }, [activeSubtema, loadExistingContent])
+    if (activeSubtema) loadExistingContent(activeSubtema, idioma)
+  }, [activeSubtema, idioma, loadExistingContent])
+
+  const loadMaterial = useCallback(async (modul: string) => {
+    const res = await fetch(`/api/materials?modul=${encodeURIComponent(modul)}`)
+    if (!res.ok) return
+    const data = await res.json()
+    setMaterialReferencia(data.contingut ?? '')
+  }, [])
+
+  useEffect(() => {
+    if (activeSubtema?.modulo) loadMaterial(activeSubtema.modulo)
+  }, [activeSubtema?.modulo, loadMaterial])
+
+  async function handleSaveMaterial() {
+    if (!activeSubtema?.modulo) return
+    setSavingMaterial(true)
+    const res = await fetch('/api/materials', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ modul: activeSubtema.modulo, contingut: materialReferencia }),
+    })
+    setSavingMaterial(false)
+    if (res.ok) {
+      setMaterialSaved(true)
+      setTimeout(() => setMaterialSaved(false), 2000)
+    }
+  }
 
   const textoActual = editado || output
 
@@ -82,6 +125,7 @@ export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRet
         leccion: activeSubtema.leccion,
         subtema: activeSubtema.subtema,
         palabras,
+        idioma,
       }),
     })
 
@@ -115,6 +159,7 @@ export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRet
         leccion: activeSubtema.leccion,
         subtema: activeSubtema.subtema,
         contenido: textoActual,
+        idioma,
       }),
     })
     const data = await res.json()
@@ -176,6 +221,26 @@ export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRet
           </div>
         )}
 
+        {/* Language tabs */}
+        <div className="flex flex-col gap-1">
+          <span className="text-xs font-extrabold text-finomik-blue uppercase tracking-wide">Idioma del contingut</span>
+          <div className="flex gap-1 border border-finomik-light2 rounded-xl p-1">
+            {IDIOMES.map(({ id, label }) => (
+              <button
+                key={id}
+                onClick={() => setIdioma(id)}
+                className={`flex-1 py-2 rounded-lg text-xs font-extrabold transition ${
+                  idioma === id
+                    ? 'bg-finomik-blue text-white'
+                    : 'text-finomik-mid3 hover:text-finomik-blue'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Word count slider */}
         <div className="flex flex-col gap-1">
           <span className="text-xs font-extrabold text-finomik-blue uppercase tracking-wide">
@@ -197,6 +262,42 @@ export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRet
             </span>
           </div>
         </div>
+
+        {/* Reference material (collapsible) */}
+        {activeSubtema && (
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={() => setShowMaterial(v => !v)}
+              className="flex items-center justify-between text-xs font-extrabold text-finomik-blue uppercase tracking-wide"
+            >
+              <span>Material de referència</span>
+              <span className="text-finomik-mid3 normal-case font-medium">
+                {showMaterial ? 'Amagar' : 'Veure / editar'}
+              </span>
+            </button>
+            {showMaterial && (
+              <div className="flex flex-col gap-2">
+                <p className="text-xs text-finomik-mid3 leading-relaxed">
+                  Enganxa aquí textos, guies o contingut de referència per a tot el mòdul <strong className="text-finomik-blue">{activeSubtema.modulo}</strong>. Claude l'usarà com a base per generar contingut precís.
+                </p>
+                <textarea
+                  value={materialReferencia}
+                  onChange={e => setMaterialReferencia(e.target.value)}
+                  rows={6}
+                  placeholder="Enganxa aquí el contingut de referència (guies, PDFs convertits a text, dades oficials...)"
+                  className="border border-finomik-light2 rounded-xl px-4 py-3 text-sm text-finomik-blue placeholder:text-finomik-mid3 focus:outline-none focus:ring-2 focus:ring-finomik-blue/20 resize-none"
+                />
+                <button
+                  onClick={handleSaveMaterial}
+                  disabled={savingMaterial}
+                  className="self-end text-xs font-extrabold bg-finomik-blue text-white px-4 py-2 rounded-lg hover:bg-finomik-mid1 transition disabled:opacity-40"
+                >
+                  {savingMaterial ? 'Desant...' : materialSaved ? 'Desat' : 'Desar material'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         <button
           onClick={handleGenerar}
@@ -224,17 +325,22 @@ export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRet
             <div className="text-5xl">✍️</div>
             <p className="font-extrabold text-finomik-blue text-lg">El contingut apareixerà aquí</p>
             <p className="text-finomik-mid3 text-sm max-w-xs">
-              Ajusta l'objectiu de paraules i prem Generar contingut.
+              Selecciona subtema, tria l'idioma i prem Generar contingut.
             </p>
           </div>
         ) : (
           <>
             {/* Top bar */}
             <div className="flex items-center justify-between shrink-0">
-              <p className="text-finomik-mid3 text-sm font-medium">
-                <span className="font-extrabold text-finomik-blue">{wordCount}</span> paraules
-                {loading && <span className="ml-2 animate-pulse text-xs">generant...</span>}
-              </p>
+              <div className="flex items-center gap-3">
+                <p className="text-finomik-mid3 text-sm font-medium">
+                  <span className="font-extrabold text-finomik-blue">{wordCount}</span> paraules
+                  {loading && <span className="ml-2 animate-pulse text-xs">generant...</span>}
+                </p>
+                <span className="text-xs font-extrabold px-2 py-0.5 rounded-lg bg-finomik-blue/10 text-finomik-blue uppercase">
+                  {idioma}
+                </span>
+              </div>
               <div className="flex gap-2">
                 <button
                   onClick={handleCopy}
@@ -253,7 +359,7 @@ export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRet
                 )}
                 {aprobado && (
                   <span className="text-xs font-extrabold text-green-600 border border-green-200 bg-green-50 px-4 py-1.5 rounded-lg">
-                    Desat
+                    Desat ({idioma.toUpperCase()})
                   </span>
                 )}
               </div>
@@ -279,7 +385,7 @@ export default function ContenidoGenerador({ preloaded, onAprobado, onGenerarRet
             {!loading && output && aprobado && activeSubtema && (
               <div className="flex flex-col gap-3 shrink-0">
                 <div className="bg-finomik-gold/10 border border-finomik-gold rounded-xl px-4 py-3 flex flex-col gap-3">
-                  <p className="text-sm font-extrabold text-finomik-blue">Contingut aprovat. Que vols fer ara?</p>
+                  <p className="text-sm font-extrabold text-finomik-blue">Contingut aprovat ({idioma.toUpperCase()}). Que vols fer ara?</p>
                   <div className="flex gap-3 flex-wrap">
                     <button
                       onClick={handleGenerarRetos}
