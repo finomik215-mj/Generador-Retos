@@ -155,11 +155,11 @@ export default function FitxaPanel({ modulo, orden, bloque, subtema, onSaved }: 
               {loading ? 'Regenerant…' : 'Regenerar'}
             </button>
           </div>
-          <Camp t="Partida" v={ficha.partida} />
-          <Camp t="Col·lisió / ancoratge" v={ficha.colisionOAncla} />
-          <Camp t="Recurs central" v={ficha.recursoCentral} />
+          <Camp t="Partida (què creu l'alumne)" v={ficha.partida} />
+          <Camp t="Enfocament d'entrada" v={ficha.colisionOAncla} />
+          <Camp t="Tipus de recurs recomanat" v={ficha.recursoCentral} />
           <div>
-            <p className="font-extrabold text-finomik-mid3 text-xs">Ordre d'explicació</p>
+            <p className="font-extrabold text-finomik-mid3 text-xs">Recorregut</p>
             <ol className="list-decimal pl-5">{ficha.ordenExplicacion.map((p, i) => <li key={i}>{p}</li>)}</ol>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">

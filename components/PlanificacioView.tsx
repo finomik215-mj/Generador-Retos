@@ -78,6 +78,9 @@ export default function PlanificacioView() {
         setPlanEstats(m)
       })
       .catch(() => {})
+    // Recorda l'últim mòdul i carrega'l sol
+    const last = typeof window !== 'undefined' ? localStorage.getItem('finomik_last_modul') : null
+    if (last) { setModul(last); carregarExistent(last) }
   }, [])
 
   async function carregarExistent(nom: string) {
@@ -134,7 +137,11 @@ export default function PlanificacioView() {
           <label className="block text-xs font-extrabold text-finomik-mid3 mb-1">Mòdul</label>
           <select
             value={modul}
-            onChange={e => { setModul(e.target.value); carregarExistent(e.target.value) }}
+            onChange={e => {
+              setModul(e.target.value)
+              carregarExistent(e.target.value)
+              if (typeof window !== 'undefined') localStorage.setItem('finomik_last_modul', e.target.value)
+            }}
             className="w-full border border-finomik-light2 rounded-xl px-3 py-2 text-sm"
           >
             <option value="">Tria un mòdul…</option>

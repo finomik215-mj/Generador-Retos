@@ -155,20 +155,20 @@ ${materialReferencia}
 ⚠️ Per a aquest mòdul NO s'ha proporcionat material de referència específic. Cenyeix-te a conceptes generals i explicats de forma prudent. NO donis xifres, percentatges ni estadístiques concretes: usa llenguatge aproximatiu i exemples hipotètics.`
 
   const seccioFitxa = ficha
-    ? `## Fitxa a executar (aquesta peça JA està dissenyada: EXECUTA-LA, no la redissenyis)
+    ? `## Fitxa a executar (aquesta peça JA està dissenyada: segueix-ne l'enfocament)
 
-No triïs tu l'estratègia ni l'estructura. Segueix aquesta fitxa:
+La fitxa et dona l'objectiu i l'ENFOCAMENT, no els exemples. TU tries els exemples, analogies i xifres concretes que encaixin.
 
 - **Punt de partida de l'alumne:** ${ficha.partida}
-- **Col·lisió o ancoratge (per on entrar):** ${ficha.colisionOAncla}
-- **Recurs central (USA'L com a eix de la peça):** ${ficha.recursoCentral}
-- **Ordre de l'explicació (segueix aquests passos en aquest ordre):**
+- **Enfocament d'entrada:** ${ficha.colisionOAncla}
+- **Tipus de recurs recomanat (tria'n un de concret que encaixi):** ${ficha.recursoCentral}
+- **Recorregut (segueix aquest ordre):**
 ${ficha.ordenExplicacion.map((p, i) => `  ${i + 1}. ${p}`).join('\n')}
 - **Inclou NOMÉS això:** ${ficha.incluidos.join(' · ')}
 - **NO en parlis (ho fan altres peces):** ${ficha.excluidos.join(' · ')}
 - **En acabar, l'alumne ha de poder:** ${ficha.evidenciaLogro}
 
-Redacta el contingut seguint aquest ordre, integrant el recurs central de forma natural i respectant estrictament inclou/exclou. Amb fitxa, NO cal que triïs cap format: l'estructura ja te la dona la fitxa.`
+Redacta el contingut seguint aquest enfocament i recorregut, escollint TU els exemples concrets, i respectant estrictament inclou/exclou. Amb fitxa, no cal que triïs cap format.`
     : ''
 
   const seccioIndex = indexCurriculum?.trim()
