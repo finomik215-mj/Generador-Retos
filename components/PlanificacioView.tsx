@@ -43,6 +43,7 @@ export default function PlanificacioView() {
   const [contByKey, setContByKey] = useState<Record<string, string[]>>({})
   const [reptesByKey, setReptesByKey] = useState<Record<string, boolean>>({})
   const [indexCurs, setIndexCurs] = useState('')
+  const [leccionsRaw, setLeccionsRaw] = useState<{ modulo: string; nom: string; ordre: number }[]>([])
   const [veureBrief, setVeureBrief] = useState<Set<number>>(new Set())
   const [copiat, setCopiat] = useState<string | null>(null)
 
@@ -82,6 +83,7 @@ export default function PlanificacioView() {
       .then(r => r.json())
       .then(d => {
         setModuls((d.moduls ?? []).map((m: { nom: string }) => m.nom))
+        setLeccionsRaw(d.leccions ?? [])
         setIndexCurs(buildIndexCurs(d.leccions ?? [], d.subtemes ?? []))
       })
       .catch(() => {})
@@ -143,6 +145,14 @@ export default function PlanificacioView() {
 
   const sumaMin = plan ? plan.objetivos.reduce((a, o) => a + (o.minutos || 0), 0) : 0
   const grups = plan ? groupObjetivos(plan.objetivos) : []
+  // Ordena els blocs per l'ordre real de l'estructura (temari), no per ordre d'aparició al pla.
+  const blockOrder = leccionsRaw.filter(l => l.modulo === modul).sort((a, b) => a.ordre - b.ordre).map(l => l.nom)
+  if (blockOrder.length) {
+    grups.sort((a, b) => {
+      const ia = blockOrder.indexOf(a.bloque); const ib = blockOrder.indexOf(b.bloque)
+      return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib)
+    })
+  }
   const labelByOrden: Record<number, string> = {}
   grups.forEach((g, gi) => g.subtemes.forEach((s, si) => s.objs.forEach((o, oi) => {
     labelByOrden[o.orden] = `${gi + 1}.${si + 1}${s.objs.length > 1 ? String.fromCharCode(97 + oi) : ''}`
