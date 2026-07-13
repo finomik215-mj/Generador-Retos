@@ -143,6 +143,10 @@ export default function PlanificacioView() {
 
   const sumaMin = plan ? plan.objetivos.reduce((a, o) => a + (o.minutos || 0), 0) : 0
   const grups = plan ? groupObjetivos(plan.objetivos) : []
+  const labelByOrden: Record<number, string> = {}
+  grups.forEach((g, gi) => g.subtemes.forEach((s, si) => s.objs.forEach((o, oi) => {
+    labelByOrden[o.orden] = `${gi + 1}.${si + 1}${s.objs.length > 1 ? String.fromCharCode(97 + oi) : ''}`
+  })))
 
   return (
     <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
@@ -283,7 +287,7 @@ export default function PlanificacioView() {
                           {s.objs.map(o => (
                             <div key={o.orden} className="border border-finomik-light2 rounded-xl p-4 bg-white">
                               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                <span className="font-black text-finomik-blue">#{o.orden}</span>
+                                <span className="font-black text-finomik-blue">{labelByOrden[o.orden] ?? o.orden}</span>
                                 <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${DIAG_CLASS[o.diagnostico] ?? 'bg-slate-100'}`}>{DIAG_LABEL[o.diagnostico] ?? o.diagnostico}</span>
                                 <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-finomik-light2/60 text-finomik-mid3">{o.papel}</span>
                                 <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-finomik-light2/60 text-finomik-mid3">{o.profundidad}</span>
@@ -302,11 +306,11 @@ export default function PlanificacioView() {
                               </div>
                               <p className="text-sm mt-1">{o.obstaculoOLaguna}{o.porQuePlausible ? ` · plausible: ${o.porQuePlausible}` : ''}</p>
                               <p className="text-xs text-finomik-mid3 mt-1">
-                                {o.dependencias?.length ? `Depèn de: ${o.dependencias.join(', ')} · ` : ''}{o.justificacion}
+                                {o.dependencias?.length ? `Depèn de: ${o.dependencias.map(d => labelByOrden[d] ?? d).join(', ')} · ` : ''}{o.justificacion}
                               </p>
                               <div className="flex items-center gap-3 mt-2 flex-wrap">
                                 <button
-                                  onClick={() => copiar(buildBrief(o, plan.arco), `brief-${o.orden}`)}
+                                  onClick={() => copiar(buildBrief(o, plan.arco, labelByOrden), `brief-${o.orden}`)}
                                   className="bg-finomik-blue text-white font-extrabold text-[11px] px-3 py-1.5 rounded-xl hover:bg-finomik-blue/90 transition"
                                 >
                                   {copiat === `brief-${o.orden}` ? 'Copiat!' : 'Copiar brief per a ChatGPT'}
@@ -325,7 +329,7 @@ export default function PlanificacioView() {
                                 </button>
                               </div>
                               {veureBrief.has(o.orden) && (
-                                <pre className="mt-2 bg-finomik-light2/30 border border-finomik-light2 rounded-xl p-3 text-[11px] whitespace-pre-wrap font-sans">{buildBrief(o, plan.arco)}</pre>
+                                <pre className="mt-2 bg-finomik-light2/30 border border-finomik-light2 rounded-xl p-3 text-[11px] whitespace-pre-wrap font-sans">{buildBrief(o, plan.arco, labelByOrden)}</pre>
                               )}
                               {obertes.has(o.orden) && <FitxaPanel modulo={plan.modulo} orden={o.orden} bloque={o.bloque} subtema={o.subtema} onSaved={() => loadStatus(modul)} />}
                             </div>
@@ -372,7 +376,8 @@ function briefDiag(d: string): string {
   return d === 'obstaculo' ? 'obstáculo' : d === 'intuiciones_sueltas' ? 'intuiciones sueltas' : 'laguna'
 }
 
-function buildBrief(o: ObjetivoPlan, arco: PlanModul['arco']): string {
+function buildBrief(o: ObjetivoPlan, arco: PlanModul['arco'], labelByOrden: Record<number, string>): string {
+  const dep = o.dependencias?.length ? o.dependencias.map(d => labelByOrden[d] ?? d).join(', ') : 'nada'
   return `ARCO DEL MÓDULO
 - Modelo inicial: ${arco.modeloInicial}
 - Recorrido: ${arco.formaRecorrido}
@@ -380,13 +385,13 @@ function buildBrief(o: ObjetivoPlan, arco: PlanModul['arco']): string {
 - Capacidad: ${arco.capacidadDecision}
 - Prueba del arco: ${arco.pruebaArco}
 
-OBJETIVO DE ESTA PIEZA
+OBJETIVO DE ESTA PIEZA (${labelByOrden[o.orden] ?? o.orden})
 - Bloque: ${o.bloque}
 - Subtema: ${o.subtema}
 - Cambio: ${o.objetivo}
 - Diagnóstico: ${briefDiag(o.diagnostico)} (${o.obstaculoOLaguna})
 - Papel: ${o.papel} · Profundidad: ${o.profundidad}
-- Minutos: ${o.minutos} · Espiral: ${o.espiral ? 'sí' : 'no'} · Depende de: ${o.dependencias?.length ? o.dependencias.join(', ') : 'nada'}
+- Minutos: ${o.minutos} · Espiral: ${o.espiral ? 'sí' : 'no'} · Depende de: ${dep}
 
 Diseña la pieza y escríbela en los tres idiomas (catalán, castellano, inglés).`
 }
