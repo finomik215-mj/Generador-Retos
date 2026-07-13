@@ -5,8 +5,10 @@ let _supabase: SupabaseClient | null = null
 export function getSupabase(): SupabaseClient {
   if (!_supabase) {
     const url = process.env.SUPABASE_URL
-    const key = process.env.SUPABASE_ANON_KEY
-    if (!url || !key) throw new Error('Falten les variables SUPABASE_URL o SUPABASE_ANON_KEY')
+    // Aquest client s'usa NOMÉS al servidor (rutes API). Preferim la service_role,
+    // que salta el RLS, i deixem l'anon com a fallback per no trencar res si no hi és.
+    const key = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY
+    if (!url || !key) throw new Error('Falten les variables SUPABASE_URL o SUPABASE_SERVICE_KEY/SUPABASE_ANON_KEY')
     _supabase = createClient(url, key)
   }
   return _supabase

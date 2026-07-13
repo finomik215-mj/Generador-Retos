@@ -9,8 +9,9 @@ import OutputPanel from '@/components/OutputPanel'
 import IndiceView from '@/components/IndiceView'
 import ContenidoGenerador from '@/components/ContenidoGenerador'
 import SubtemaSelector from '@/components/SubtemaSelector'
+import PlanificacioView from '@/components/PlanificacioView'
 
-type Tab = 'indice' | 'contenido' | 'retos'
+type Tab = 'indice' | 'planificacio' | 'contenido' | 'retos'
 
 interface SubtemaSeleccionado {
   modulo: string
@@ -20,7 +21,7 @@ interface SubtemaSeleccionado {
 }
 
 export default function HomePage() {
-  const [tab, setTab] = useState<Tab>('indice')
+  const [tab, setTab] = useState<Tab>('planificacio')
 
   const [selectedSubtema, setSelectedSubtema] = useState<SubtemaSeleccionado | null>(null)
   const [retosMeta, setRetosMeta] = useState<SubtemaSeleccionado | null>(null)
@@ -132,10 +133,13 @@ export default function HomePage() {
     setGuardandoRetos(false)
   }
 
-  const tabs: { id: Tab; label: string }[] = [
-    { id: 'indice', label: 'Índex' },
+  const primaryTabs: { id: Tab; label: string }[] = [
+    { id: 'planificacio', label: 'Curs' },
+    { id: 'indice', label: 'Estructura' },
+  ]
+  const manualTabs: { id: Tab; label: string }[] = [
     { id: 'contenido', label: 'Contingut' },
-    { id: 'retos', label: 'Generador de reptes' },
+    { id: 'retos', label: 'Reptes' },
   ]
 
   return (
@@ -143,26 +147,50 @@ export default function HomePage() {
       <Header />
 
       <div className="border-b border-finomik-light2 px-6">
-        <div className="flex gap-1">
-          {tabs.map(t => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={`px-4 py-3 text-sm font-extrabold transition border-b-2 -mb-px ${
-                tab === t.id
-                  ? 'border-finomik-blue text-finomik-blue'
-                  : 'border-transparent text-finomik-mid3 hover:text-finomik-blue'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+        <div className="flex items-center">
+          <div className="flex gap-1">
+            {primaryTabs.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`px-4 py-3 text-sm font-extrabold transition border-b-2 -mb-px ${
+                  tab === t.id
+                    ? 'border-finomik-blue text-finomik-blue'
+                    : 'border-transparent text-finomik-mid3 hover:text-finomik-blue'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1 ml-auto">
+            <span className="text-[10px] font-extrabold uppercase tracking-wide text-finomik-mid3/50 mr-1">Eines manuals</span>
+            {manualTabs.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`px-3 py-3 text-xs font-extrabold transition border-b-2 -mb-px ${
+                  tab === t.id
+                    ? 'border-finomik-blue text-finomik-blue'
+                    : 'border-transparent text-finomik-mid3/60 hover:text-finomik-blue'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {tab === 'indice' && (
         <main className="flex-1 overflow-y-auto bg-white">
           <IndiceView key={indiceKey} onSelectSubtema={handleSelectSubtema} />
+        </main>
+      )}
+
+      {tab === 'planificacio' && (
+        <main className="flex-1 flex overflow-hidden">
+          <PlanificacioView />
         </main>
       )}
 

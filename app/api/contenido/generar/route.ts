@@ -12,6 +12,29 @@ function derivarPes(blocNom: string, totalBlocs: number, blocIndex: number): Mod
   return 'normal'
 }
 
+// Construeix l'índex complet del curs des de Supabase (substitueix l'índex hardcodejat).
+function buildIndexCurriculum(
+  leccions: { modulo: string; nom: string }[],
+  subtemes: { modulo: string; leccion: string; nom: string }[],
+): string {
+  const byModule = new Map<string, string[]>()
+  for (const l of leccions) {
+    if (!byModule.has(l.modulo)) byModule.set(l.modulo, [])
+    byModule.get(l.modulo)!.push(l.nom)
+  }
+  let out = ''
+  for (const [mod, blocs] of byModule) {
+    out += `\n### ${mod}\n`
+    for (const bloc of blocs) {
+      const subs = subtemes
+        .filter(s => s.modulo === mod && s.leccion === bloc)
+        .map(s => s.nom)
+      out += `  [${bloc}]\n    ${subs.join(' · ')}\n`
+    }
+  }
+  return out
+}
+
 const IDIOMA_LABELS: Record<Idioma, string> = {
   ca: 'català',
   es: 'castellà',
@@ -33,13 +56,15 @@ export async function POST(req: NextRequest) {
   }
 
   const [
-    { data: allSubtemes },
-    { data: allLeccions },
+    { data: allSubtemesRaw },
+    { data: allLeccionsRaw },
     { data: historialData },
     { data: materialData },
   ] = await Promise.all([
-    supabase.from('subtemes').select('modulo, leccion, nom').eq('modulo', modulo),
-    supabase.from('leccions').select('modulo, nom').eq('modulo', modulo).order('ordre', { ascending: true }),
+    // Tot el currículo (per construir l'índex complet del curs).
+    supabase.from('subtemes').select('modulo, leccion, nom'),
+    supabase.from('leccions').select('modulo, nom, ordre')
+      .order('modulo', { ascending: true }).order('ordre', { ascending: true }),
     supabase.from('contenido_aprobado')
       .select('leccion, subtema, contenido')
       .eq('modulo', modulo)
@@ -48,11 +73,22 @@ export async function POST(req: NextRequest) {
     supabase.from('materials_referencia').select('contingut').eq('modul', modulo).single(),
   ])
 
-  const totalSubtemes = allSubtemes?.length ?? 0
-  const totalBlocs = allLeccions?.length ?? 1
-  const blocIndex = allLeccions?.findIndex(l => l.nom === leccion) ?? 0
-  const subtemesBlocActual = allSubtemes?.filter(s => s.leccion === leccion).map(s => s.nom) ?? []
+  const subtemesRaw = allSubtemesRaw ?? []
+  const leccionsRaw = allLeccionsRaw ?? []
+
+  // Subconjunt del mòdul actual (per al context pedagògic).
+  const allSubtemes = subtemesRaw.filter(s => s.modulo === modulo)
+  const allLeccions = leccionsRaw.filter(l => l.modulo === modulo)
+
+  const totalSubtemes = allSubtemes.length
+  const totalBlocs = allLeccions.length || 1
+  const blocIndexRaw = allLeccions.findIndex(l => l.nom === leccion)
+  const blocIndex = blocIndexRaw < 0 ? 0 : blocIndexRaw
+  const subtemesBlocActual = allSubtemes.filter(s => s.leccion === leccion).map(s => s.nom)
   const pes = derivarPes(leccion, totalBlocs, blocIndex)
+
+  // Índex complet del curs, construït des de Supabase.
+  const indexCurriculum = buildIndexCurriculum(leccionsRaw, subtemesRaw)
 
   const modulContext: ModulContext = {
     nom: modulo,
@@ -70,7 +106,7 @@ export async function POST(req: NextRequest) {
 
   const materialReferencia = materialData?.contingut ?? undefined
 
-  const systemPrompt = getSystemPromptContenido(historial, modulContext, palabras, idioma, materialReferencia)
+  const systemPrompt = getSystemPromptContenido(historial, modulContext, palabras, idioma, materialReferencia, indexCurriculum)
 
   const idiomaLabel = IDIOMA_LABELS[idioma] ?? idioma
   const userMessage = `Escriu el contingut educatiu complet per a aquest subtema en ${idiomaLabel}.
