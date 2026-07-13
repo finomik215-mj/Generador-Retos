@@ -42,6 +42,18 @@ export default function PlanificacioView() {
   const [fichaByOrden, setFichaByOrden] = useState<Record<number, string>>({})
   const [contByKey, setContByKey] = useState<Record<string, string[]>>({})
   const [reptesByKey, setReptesByKey] = useState<Record<string, boolean>>({})
+  const [indexCurs, setIndexCurs] = useState('')
+  const [veureBrief, setVeureBrief] = useState<Set<number>>(new Set())
+  const [copiat, setCopiat] = useState<string | null>(null)
+
+  function copiar(text: string, etiqueta: string) {
+    navigator.clipboard?.writeText(text)
+    setCopiat(etiqueta)
+    setTimeout(() => setCopiat(c => (c === etiqueta ? null : c)), 1500)
+  }
+  function toggleVeureBrief(orden: number) {
+    setVeureBrief(prev => { const n = new Set(prev); if (n.has(orden)) n.delete(orden); else n.add(orden); return n })
+  }
 
   async function loadStatus(nom: string) {
     if (!nom) { setFichaByOrden({}); setContByKey({}); setReptesByKey({}); return }
@@ -68,7 +80,10 @@ export default function PlanificacioView() {
   useEffect(() => {
     fetch('/api/indice')
       .then(r => r.json())
-      .then(d => setModuls((d.moduls ?? []).map((m: { nom: string }) => m.nom)))
+      .then(d => {
+        setModuls((d.moduls ?? []).map((m: { nom: string }) => m.nom))
+        setIndexCurs(buildIndexCurs(d.leccions ?? [], d.subtemes ?? []))
+      })
       .catch(() => {})
     fetch('/api/planificacion/estat')
       .then(r => r.json())
@@ -153,6 +168,14 @@ export default function PlanificacioView() {
           </select>
           <p className="text-[10px] text-finomik-mid3 mt-1">✓ pla aprovat · ~ esborrany · sense pla</p>
         </div>
+
+        <button
+          onClick={() => copiar(indexCurs, 'index')}
+          disabled={!indexCurs}
+          className="text-[11px] font-extrabold text-finomik-blue hover:underline text-left disabled:opacity-40"
+        >
+          {copiat === 'index' ? 'Índex copiat!' : 'Copiar índex del curs (per a les instruccions del GPT)'}
+        </button>
 
         <div className="flex gap-3">
           <div className="flex-1">
@@ -281,12 +304,29 @@ export default function PlanificacioView() {
                               <p className="text-xs text-finomik-mid3 mt-1">
                                 {o.dependencias?.length ? `Depèn de: ${o.dependencias.join(', ')} · ` : ''}{o.justificacion}
                               </p>
-                              <button
-                                onClick={() => toggleFitxa(o.orden)}
-                                className="mt-2 text-[11px] font-extrabold text-finomik-blue hover:underline"
-                              >
-                                {obertes.has(o.orden) ? '▾ Amagar fitxa' : '▸ Fitxa didàctica'}
-                              </button>
+                              <div className="flex items-center gap-3 mt-2 flex-wrap">
+                                <button
+                                  onClick={() => copiar(buildBrief(o, plan.arco), `brief-${o.orden}`)}
+                                  className="bg-finomik-blue text-white font-extrabold text-[11px] px-3 py-1.5 rounded-xl hover:bg-finomik-blue/90 transition"
+                                >
+                                  {copiat === `brief-${o.orden}` ? 'Copiat!' : 'Copiar brief per a ChatGPT'}
+                                </button>
+                                <button
+                                  onClick={() => toggleVeureBrief(o.orden)}
+                                  className="text-[11px] font-extrabold text-finomik-blue hover:underline"
+                                >
+                                  {veureBrief.has(o.orden) ? 'Amagar brief' : 'Veure brief'}
+                                </button>
+                                <button
+                                  onClick={() => toggleFitxa(o.orden)}
+                                  className="text-[11px] font-extrabold text-finomik-mid3/60 hover:underline"
+                                >
+                                  Generar dins l'app (opcional)
+                                </button>
+                              </div>
+                              {veureBrief.has(o.orden) && (
+                                <pre className="mt-2 bg-finomik-light2/30 border border-finomik-light2 rounded-xl p-3 text-[11px] whitespace-pre-wrap font-sans">{buildBrief(o, plan.arco)}</pre>
+                              )}
                               {obertes.has(o.orden) && <FitxaPanel modulo={plan.modulo} orden={o.orden} bloque={o.bloque} subtema={o.subtema} onSaved={() => loadStatus(modul)} />}
                             </div>
                           ))}
@@ -312,6 +352,43 @@ export default function PlanificacioView() {
       </section>
     </div>
   )
+}
+
+function buildIndexCurs(leccions: { modulo: string; nom: string }[], subtemes: { modulo: string; leccion: string; nom: string }[]): string {
+  const byM = new Map<string, string[]>()
+  for (const l of leccions) { if (!byM.has(l.modulo)) byM.set(l.modulo, []); byM.get(l.modulo)!.push(l.nom) }
+  let out = 'ÍNDICE DEL CURSO (no repitas lo que ya se explica en otra pieza o módulo)\n'
+  for (const [m, blocs] of byM) {
+    out += `\n### ${m}\n`
+    for (const b of blocs) {
+      const s = subtemes.filter(x => x.modulo === m && x.leccion === b).map(x => x.nom)
+      out += `  [${b}]\n    ${s.join(' · ')}\n`
+    }
+  }
+  return out
+}
+
+function briefDiag(d: string): string {
+  return d === 'obstaculo' ? 'obstáculo' : d === 'intuiciones_sueltas' ? 'intuiciones sueltas' : 'laguna'
+}
+
+function buildBrief(o: ObjetivoPlan, arco: PlanModul['arco']): string {
+  return `ARCO DEL MÓDULO
+- Modelo inicial: ${arco.modeloInicial}
+- Recorrido: ${arco.formaRecorrido}
+- Modelo final: ${arco.modeloFinal}
+- Capacidad: ${arco.capacidadDecision}
+- Prueba del arco: ${arco.pruebaArco}
+
+OBJETIVO DE ESTA PIEZA
+- Bloque: ${o.bloque}
+- Subtema: ${o.subtema}
+- Cambio: ${o.objetivo}
+- Diagnóstico: ${briefDiag(o.diagnostico)} (${o.obstaculoOLaguna})
+- Papel: ${o.papel} · Profundidad: ${o.profundidad}
+- Minutos: ${o.minutos} · Espiral: ${o.espiral ? 'sí' : 'no'} · Depende de: ${o.dependencias?.length ? o.dependencias.join(', ') : 'nada'}
+
+Diseña la pieza y escríbela en los tres idiomas (catalán, castellano, inglés).`
 }
 
 interface Grup { bloque: string; subtemes: { subtema: string; objs: ObjetivoPlan[] }[] }
