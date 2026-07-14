@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { getSystemPromptPlanificacion, type PlanModul } from '@/lib/systemPromptPlanificacion'
 import { supabase } from '@/lib/supabase'
+import { getMaterialReferencia } from '@/lib/materialReferencia'
 
 const IDIOMA_NOMS: Record<string, string> = { ca: 'català', es: 'castellà', en: 'anglès' }
 
@@ -24,10 +25,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Falta el mòdul' }, { status: 400 })
   }
 
-  const [{ data: leccionsRaw }, { data: subtemesRaw }, { data: materialData }] = await Promise.all([
+  const [{ data: leccionsRaw }, { data: subtemesRaw }, materialRaw] = await Promise.all([
     supabase.from('leccions').select('nom, ordre').eq('modulo', modulo).order('ordre', { ascending: true }),
     supabase.from('subtemes').select('leccion, nom').eq('modulo', modulo),
-    supabase.from('materials_referencia').select('contingut').eq('modul', modulo).single(),
+    getMaterialReferencia(modulo),
   ])
 
   const leccions = leccionsRaw ?? []
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
   }).join('\n\n')
 
   const minutosContenido = Math.round(horasTotales * 60 * (1 - reservaRetosPct / 100))
-  const material = materialData?.contingut ?? '(sense material de referència; no donis xifres concretes)'
+  const material = materialRaw ?? '(sense material de referència; no donis xifres concretes)'
 
   const userMessage = `MÒDUL: ${modulo}
 

@@ -4,6 +4,7 @@ import { getSystemPromptContenido, type Idioma } from '@/lib/systemPromptConteni
 import type { Ficha } from '@/lib/systemPromptFicha'
 import type { ObjetivoPlan } from '@/lib/systemPromptPlanificacion'
 import { supabase } from '@/lib/supabase'
+import { getMaterialReferencia } from '@/lib/materialReferencia'
 
 const IDIOMA_LABELS: Record<string, string> = { ca: 'català', es: 'castellà', en: 'anglès' }
 const PARAULES_PER_PROFUNDITAT: Record<string, number> = { reconocer: 450, comprender: 700, aplicar: 900 }
@@ -36,10 +37,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Falten modulo o orden' }, { status: 400 })
   }
 
-  const [{ data: fichaRow }, { data: planRow }, { data: materialData }, { data: historialData }, { data: subtemesRaw }, { data: leccionsRaw }] = await Promise.all([
+  const [{ data: fichaRow }, { data: planRow }, materialRaw, { data: historialData }, { data: subtemesRaw }, { data: leccionsRaw }] = await Promise.all([
     supabase.from('fichas').select('*').eq('modulo', modulo).eq('orden', orden).maybeSingle(),
     supabase.from('planificacions').select('objetivos').eq('modulo', modulo).maybeSingle(),
-    supabase.from('materials_referencia').select('contingut').eq('modul', modulo).single(),
+    getMaterialReferencia(modulo),
     supabase.from('contenido_aprobado').select('leccion, subtema, contenido').eq('modulo', modulo).eq('idioma', idioma).order('created_at', { ascending: true }),
     supabase.from('subtemes').select('modulo, leccion, nom'),
     supabase.from('leccions').select('modulo, nom, ordre').order('modulo', { ascending: true }).order('ordre', { ascending: true }),
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
   }
 
   const historial = historialData?.map(row => `[${row.leccion} > ${row.subtema}]\n${row.contenido}`).join('\n\n---\n\n') ?? ''
-  const material = materialData?.contingut ?? undefined
+  const material = materialRaw ?? undefined
 
   const systemPrompt = getSystemPromptContenido(historial, undefined, palabras, idioma, material, indexCurriculum, ficha)
 

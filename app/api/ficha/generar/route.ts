@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { getSystemPromptFicha, type Ficha } from '@/lib/systemPromptFicha'
 import type { ObjetivoPlan, ArcoModul } from '@/lib/systemPromptPlanificacion'
 import { supabase } from '@/lib/supabase'
+import { getMaterialReferencia } from '@/lib/materialReferencia'
 
 const IDIOMA_NOMS: Record<string, string> = { ca: 'català', es: 'castellà', en: 'anglès' }
 
@@ -16,9 +17,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Falten modulo o orden' }, { status: 400 })
   }
 
-  const [{ data: planRow }, { data: materialData }] = await Promise.all([
+  const [{ data: planRow }, materialRaw] = await Promise.all([
     supabase.from('planificacions').select('*').eq('modulo', modulo).maybeSingle(),
-    supabase.from('materials_referencia').select('contingut').eq('modul', modulo).single(),
+    getMaterialReferencia(modulo),
   ])
 
   if (!planRow) {
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
   const idioma = (planRow.idioma as string) ?? 'ca'
   const anterior = objetivos.find(o => o.orden === orden - 1)
   const seguent = objetivos.find(o => o.orden === orden + 1)
-  const material = materialData?.contingut ?? '(sense material de referència)'
+  const material = materialRaw ?? '(sense material de referència)'
 
   const userMessage = `ARC DEL MÒDUL:
 - Model inicial: ${arco.modeloInicial}

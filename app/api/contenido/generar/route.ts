@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { getSystemPromptContenido, type ModulContext, type Idioma } from '@/lib/systemPromptContenido'
 import { supabase } from '@/lib/supabase'
+import { getMaterialReferencia } from '@/lib/materialReferencia'
 
 function derivarPes(blocNom: string, totalBlocs: number, blocIndex: number): ModulContext['pesBlocActual'] {
   const nom = blocNom.toLowerCase()
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
     { data: allSubtemesRaw },
     { data: allLeccionsRaw },
     { data: historialData },
-    { data: materialData },
+    materialRaw,
   ] = await Promise.all([
     // Tot el currículo (per construir l'índex complet del curs).
     supabase.from('subtemes').select('modulo, leccion, nom'),
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
       .eq('modulo', modulo)
       .eq('idioma', idioma)
       .order('created_at', { ascending: true }),
-    supabase.from('materials_referencia').select('contingut').eq('modul', modulo).single(),
+    getMaterialReferencia(modulo),
   ])
 
   const subtemesRaw = allSubtemesRaw ?? []
@@ -104,7 +105,7 @@ export async function POST(req: NextRequest) {
     `[${row.leccion} > ${row.subtema}]\n${row.contenido}`
   ).join('\n\n---\n\n') ?? ''
 
-  const materialReferencia = materialData?.contingut ?? undefined
+  const materialReferencia = materialRaw ?? undefined
 
   const systemPrompt = getSystemPromptContenido(historial, modulContext, palabras, idioma, materialReferencia, indexCurriculum)
 
