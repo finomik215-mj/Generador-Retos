@@ -50,7 +50,7 @@ export default function ConexionesPanel({ modulo }: { modulo: string }) {
         body: JSON.stringify({ modulo }),
       })
       const data = await res.json()
-      if (!res.ok) { setError(data.error ?? 'Error generant la guia'); return }
+      if (!res.ok) { setError((data.error ?? 'Error generant la guia') + (data.detail ? ` — ${data.detail}` : '')); return }
       setGuia(data as GuiaConexiones); setEstado('sense desar'); setObert(true)
     } catch (e) {
       setError(String(e))

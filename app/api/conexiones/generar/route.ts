@@ -4,6 +4,8 @@ import { getSystemPromptConexiones, type GuiaConexiones } from '@/lib/systemProm
 import { MODULO_ECONOMIA, CONEXIONES_ECONOMIA, CURRICULO_ECONOMIA } from '@/lib/conexionesCurriculares'
 import { supabase } from '@/lib/supabase'
 
+export const maxDuration = 60
+
 export async function POST(req: NextRequest) {
   if (req.cookies.get('session')?.value !== 'authenticated') {
     return NextResponse.json({ error: 'No autoritzat' }, { status: 401 })
