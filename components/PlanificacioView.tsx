@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import type { PlanModul, ObjetivoPlan } from '@/lib/systemPromptPlanificacion'
+import { MODULO_ECONOMIA } from '@/lib/conexionesCurriculares'
 import FitxaPanel from './FitxaPanel'
+import ConexionesPanel from './ConexionesPanel'
 
 const DIAG_LABEL: Record<string, string> = {
   obstaculo: 'Obstacle',
@@ -276,6 +278,9 @@ export default function PlanificacioView() {
                 Temps contingut: {plan.tiempo.minutosContenido} min · Suma objectius: {sumaMin} min · {plan.objetivos.length} objectius
               </p>
             </div>
+
+            {/* Adaptació al currículo oficial (només Economia) */}
+            {modul === MODULO_ECONOMIA && <ConexionesPanel modulo={modul} />}
 
             {/* Objectius */}
             <div className="flex flex-col gap-3">
