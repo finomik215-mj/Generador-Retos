@@ -144,7 +144,7 @@ Escribe la pieza en los **tres idiomas** (catalán, castellano e inglés). Cént
 - No uses el guion largo (—); usa coma, punto y coma, dos puntos o punto.
 
 **Coherencia (lo más importante).**
-- **No repitas lo que ya se explica en otro módulo o en otra pieza (crítico).** Es importantísimo que ningún concepto se explique dos veces en el curso: cada uno tiene UNA sola pieza. Cada brief te llega con el índice del curso incrustado: antes de escribir, mira qué pertenece a otras piezas y NO lo desarrolles aquí. Si necesitas apoyarte en algo ya visto, una frase de recordatorio basta; nunca lo definas desde cero ni lo expliques de nuevo.
+- **No repitas lo que ya se explica en otro módulo o en otra pieza (crítico).** Es importantísimo que ningún concepto se explique dos veces en el curso: cada uno tiene UNA sola pieza. Cada brief te llega con una sección **REPARTO DE CONCEPTOS**: te dice qué conceptos defines tú aquí desde cero (eres el dueño) y cuáles NO debes definir porque son de otra pieza. Los que no son tuyos, úsalos solo con una frase de enlace; nunca los expliques desde cero ni los desarrolles.
 - Apóyate en las dependencias sin re-explicarlas.
 - Si es espiral, no agotes la idea.
 - No inventes datos ni cifras: usa las del material, o habla en términos aproximados.
@@ -159,7 +159,7 @@ Escribe la pieza en los **tres idiomas** (catalán, castellano e inglés). Cént
 Por cada pieza recibirás:
 - El **arco del módulo** (para situar la pieza en el viaje).
 - Los **datos del objetivo:** el cambio "de X a Y", el diagnóstico, el papel, la profundidad, los minutos, las dependencias y si es espiral. (La estrategia la decides tú.)
-- El **índice del curso** (para no repetir lo de otras piezas o módulos).
+- El **reparto de conceptos** (qué defines tú y qué no, para no repetir lo de otras piezas o módulos).
 - En los módulos de **Economía (1º de Bachillerato y 4º de ESO)**, además, la **conexión con el libro real:** la unidad y los apartados del libro de texto oficial de la asignatura con los que enlaza la pieza.
 
 Con eso, diseñas la pieza (punto 6) y la escribes en los tres idiomas.

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import type { PlanModul, ObjetivoPlan } from '@/lib/systemPromptPlanificacion'
 import { getConexionLibro, tieneCurriculoLibro } from '@/lib/curriculoLibros'
+import type { ConceptoReparto } from '@/lib/systemPromptMapaConceptos'
 import FitxaPanel from './FitxaPanel'
 import ConexionesPanel from './ConexionesPanel'
 
@@ -45,6 +46,10 @@ export default function PlanificacioView() {
   const [contByKey, setContByKey] = useState<Record<string, string[]>>({})
   const [reptesByKey, setReptesByKey] = useState<Record<string, boolean>>({})
   const [indexCurs, setIndexCurs] = useState('')
+  const [mapaConceptes, setMapaConceptes] = useState<ConceptoReparto[]>([])
+  const [mapaEstat, setMapaEstat] = useState<string | null>(null)
+  const [mapaLoading, setMapaLoading] = useState(false)
+  const [mapaSaving, setMapaSaving] = useState(false)
   const [leccionsRaw, setLeccionsRaw] = useState<{ modulo: string; nom: string; ordre: number }[]>([])
   const [veureBrief, setVeureBrief] = useState<Set<number>>(new Set())
   const [copiat, setCopiat] = useState<string | null>(null)
@@ -97,6 +102,10 @@ export default function PlanificacioView() {
         setPlanEstats(m)
       })
       .catch(() => {})
+    fetch('/api/mapa/obtener')
+      .then(r => r.json())
+      .then(({ data }) => { if (data) { setMapaConceptes(data.conceptos ?? []); setMapaEstat(data.estado) } })
+      .catch(() => {})
     // Recorda l'últim mòdul i carrega'l sol
     const last = typeof window !== 'undefined' ? localStorage.getItem('finomik_last_modul') : null
     if (last) { setModul(last); carregarExistent(last) }
@@ -129,6 +138,33 @@ export default function PlanificacioView() {
     } finally {
       setLoading(false)
     }
+  }
+
+  async function generarMapa() {
+    setMapaLoading(true); setError('')
+    try {
+      const res = await fetch('/api/mapa/generar', { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) { setError((data.error ?? 'Error generant el mapa') + (data.detail ? ` — ${data.detail}` : '')); return }
+      setMapaConceptes(data.conceptos ?? []); setMapaEstat('sense desar')
+    } catch (e) {
+      setError(String(e))
+    } finally {
+      setMapaLoading(false)
+    }
+  }
+
+  async function desarMapa(nouEstat: 'propuesto' | 'aprobado') {
+    setMapaSaving(true); setError('')
+    const res = await fetch('/api/mapa/guardar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mapa: { conceptos: mapaConceptes }, estado: nouEstat }),
+    })
+    const data = await res.json()
+    if (!res.ok) setError(data.error ?? 'Error desant el mapa')
+    else setMapaEstat(nouEstat)
+    setMapaSaving(false)
   }
 
   async function desar(nouEstat: 'propuesto' | 'aprobado') {
@@ -192,6 +228,40 @@ export default function PlanificacioView() {
         >
           {copiat === 'index' ? 'Índex copiat!' : 'Copiar índex del curs (per a les instruccions del GPT)'}
         </button>
+
+        {/* Mapa de conceptes (repartidor, a nivell de curs) */}
+        <div className="rounded-xl border border-finomik-light2 p-3 flex flex-col gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-extrabold text-finomik-mid3">Mapa de conceptes</span>
+            {mapaEstat && (
+              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                mapaEstat === 'aprobado' ? 'bg-green-100 text-green-800'
+                : mapaEstat === 'sense desar' ? 'bg-slate-100 text-slate-500'
+                : 'bg-amber-100 text-amber-800'
+              }`}>{mapaEstat}</span>
+            )}
+          </div>
+          <p className="text-[10px] text-finomik-mid3">Reparteix cada concepte a una sola peça perquè no es repeteixi. Es fica a cada brief.</p>
+          <button
+            onClick={generarMapa}
+            disabled={mapaLoading}
+            className="bg-finomik-blue text-white font-extrabold text-[11px] px-3 py-1.5 rounded-lg hover:bg-finomik-blue/90 transition disabled:opacity-40"
+          >
+            {mapaLoading ? 'Generant…' : mapaConceptes.length ? `Regenerar mapa (${mapaConceptes.length})` : 'Generar mapa de conceptes'}
+          </button>
+          {mapaConceptes.length > 0 && (
+            <div className="flex gap-2">
+              <button onClick={() => desarMapa('propuesto')} disabled={mapaSaving}
+                className="flex-1 border border-finomik-blue text-finomik-blue font-extrabold text-[11px] px-2 py-1.5 rounded-lg hover:bg-finomik-blue/5 transition disabled:opacity-40">
+                {mapaSaving ? 'Desant…' : 'Desar'}
+              </button>
+              <button onClick={() => desarMapa('aprobado')} disabled={mapaSaving}
+                className="flex-1 bg-finomik-gold text-finomik-blue font-extrabold text-[11px] px-2 py-1.5 rounded-lg hover:bg-finomik-gold/80 transition disabled:opacity-40">
+                Aprovar
+              </button>
+            </div>
+          )}
+        </div>
 
         <div className="flex gap-3">
           <div className="flex-1">
@@ -325,7 +395,7 @@ export default function PlanificacioView() {
                               </p>
                               <div className="flex items-center gap-3 mt-2 flex-wrap">
                                 <button
-                                  onClick={() => copiar(buildBrief(o, plan.arco, labelByOrden, plan.modulo, indexCurs), `brief-${o.orden}`)}
+                                  onClick={() => copiar(buildBrief(o, plan.arco, labelByOrden, plan.modulo, mapaConceptes), `brief-${o.orden}`)}
                                   className="bg-finomik-blue text-white font-extrabold text-[11px] px-3 py-1.5 rounded-xl hover:bg-finomik-blue/90 transition"
                                 >
                                   {copiat === `brief-${o.orden}` ? 'Copiat!' : 'Copiar brief per a ChatGPT'}
@@ -344,7 +414,7 @@ export default function PlanificacioView() {
                                 </button>
                               </div>
                               {veureBrief.has(o.orden) && (
-                                <pre className="mt-2 bg-finomik-light2/30 border border-finomik-light2 rounded-xl p-3 text-[11px] whitespace-pre-wrap font-sans">{buildBrief(o, plan.arco, labelByOrden, plan.modulo, indexCurs)}</pre>
+                                <pre className="mt-2 bg-finomik-light2/30 border border-finomik-light2 rounded-xl p-3 text-[11px] whitespace-pre-wrap font-sans">{buildBrief(o, plan.arco, labelByOrden, plan.modulo, mapaConceptes)}</pre>
                               )}
                               {obertes.has(o.orden) && <FitxaPanel modulo={plan.modulo} orden={o.orden} bloque={o.bloque} subtema={o.subtema} onSaved={() => loadStatus(modul)} />}
                             </div>
@@ -391,14 +461,34 @@ function briefDiag(d: string): string {
   return d === 'obstaculo' ? 'obstáculo' : d === 'intuiciones_sueltas' ? 'intuiciones sueltas' : 'laguna'
 }
 
-function buildBrief(o: ObjetivoPlan, arco: PlanModul['arco'], labelByOrden: Record<number, string>, modulo: string, indexCurs: string): string {
+function buildReparto(o: ObjetivoPlan, modulo: string, conceptos: ConceptoReparto[]): string {
+  if (!conceptos.length) {
+    return `NO REPETIR CONCEPTOS (crítico)
+Cada concepto del curso se explica en UNA sola pieza. No desarrolles aquí conceptos que pertenezcan claramente a otra pieza o módulo: si te apoyas en ellos, una frase de recordatorio y sigues. Lo que el alumno ya sabe (dependencias) tampoco se re-explica.`
+  }
+  const esAqui = (p: { modulo: string; bloque: string; subtema: string }) =>
+    p.modulo === modulo && p.bloque === o.bloque && p.subtema === o.subtema
+  const defines = conceptos.filter(c => esAqui(c.duenyo)).map(c => c.concepto)
+  const referencias = conceptos.filter(c => c.reapariciones.some(esAqui))
+  const linDefines = defines.length ? defines.join(', ') : '(ninguno marcado; aun así, no repitas conceptos de otras piezas)'
+  const linRef = referencias.length
+    ? referencias.map(c => `    · ${c.concepto} → dueño: ${c.duenyo.modulo}, "${c.duenyo.subtema}"`).join('\n')
+    : '    · (ninguno marcado)'
+  return `REPARTO DE CONCEPTOS (crítico para no repetir)
+- Defines aquí, desde cero (eres el dueño): ${linDefines}
+- NO definas aquí, ya son de otras piezas (úsalos solo con una frase de enlace, nunca los expliques desde cero):
+${linRef}
+Cualquier otro concepto que sea claramente de otra pieza del curso, tampoco lo desarrolles. Las dependencias son cosas que el alumno ya sabe: no las re-expliques.`
+}
+
+function buildBrief(o: ObjetivoPlan, arco: PlanModul['arco'], labelByOrden: Record<number, string>, modulo: string, conceptos: ConceptoReparto[]): string {
   const dep = o.dependencias?.length ? o.dependencias.map(d => labelByOrden[d] ?? d).join(', ') : 'nada'
   const conexioLibro = getConexionLibro(modulo, o.bloque)
   const seccioLibro = conexioLibro
     ? `\n\nCONEXIÓN CON EL LIBRO REAL (esta asignatura tiene un libro de texto oficial; conecta la pieza con esta parte del temario, usa su terminología y respeta cómo el libro ordena los contenidos, pero NO lo repitas literal ni lo sustituyas: aterrízalo en una decisión real del alumno)
 - ${conexioLibro}`
     : ''
-  const seccioIndex = indexCurs ? `\n\n${indexCurs}` : ''
+  const seccioReparto = `\n\n${buildReparto(o, modulo, conceptos)}`
   return `ARCO DEL MÓDULO
 - Modelo inicial: ${arco.modeloInicial}
 - Recorrido: ${arco.formaRecorrido}
@@ -415,10 +505,7 @@ OBJETIVO DE ESTA PIEZA (${labelByOrden[o.orden] ?? o.orden})
 - Minutos: ${o.minutos} · Espiral: ${o.espiral ? 'sí' : 'no'} · Depende de: ${dep}${seccioLibro}
 
 PARA QUIÉN ESCRIBES (obligatorio)
-Alumnado de secundaria que oye estos conceptos POR PRIMERA VEZ. No des nada por sabido: parte de cero, explica cada término la primera vez que aparezca con lenguaje sencillo y ejemplos cercanos, sin jerga económica sin aclarar. Si una frase solo la entiende quien ya sabe economía, reescríbela.
-
-NO REPETIR CONCEPTOS (crítico)
-Cada concepto del curso se explica en UNA sola pieza. En el índice de abajo, todo lo que pertenece a OTRA pieza o módulo NO lo expliques aquí: si necesitas apoyarte en ello, una frase de recordatorio y sigues, nunca lo desarrolles ni lo definas desde cero. Lo que el alumno "ya sabe" (dependencias) tampoco se re-explica.${seccioIndex}
+Alumnado de secundaria que oye estos conceptos POR PRIMERA VEZ. No des nada por sabido: parte de cero, explica cada término la primera vez que aparezca con lenguaje sencillo y ejemplos cercanos, sin jerga económica sin aclarar. Si una frase solo la entiende quien ya sabe economía, reescríbela.${seccioReparto}
 
 Diseña la pieza y escríbela en los tres idiomas (catalán, castellano, inglés).`
 }
