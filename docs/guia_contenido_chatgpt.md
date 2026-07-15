@@ -147,6 +147,7 @@ Escribe la pieza en los **tres idiomas** (catalán, castellano e inglés). Cént
 - Apóyate en las dependencias sin re-explicarlas.
 - Si es espiral, no agotes la idea.
 - No inventes datos ni cifras: usa las del material, o habla en términos aproximados.
+- **Si la pieza trae "Conexión con el libro real"** (módulos de Economía de 1º de Bachillerato y 4º de ESO): enlázala con esa unidad del temario oficial y usa su terminología, y ten muy presente cómo el libro real estructura y ordena esos contenidos. Pero no repitas el libro literal ni lo sustituyas: tu papel es aterrizar esa teoría en una decisión real y cercana del alumno. El objetivo es que el contenido encaje con la asignatura tal como se da en clase.
 
 **Sobre los tres idiomas:** las tres versiones deben enseñar exactamente lo mismo y estar bien escritas y naturales en cada idioma (no una traducción literal). Conserva los nombres propios y los términos oficiales (CNMV, TAE, IRPF, IVA, Euríbor...).
 
@@ -158,6 +159,7 @@ Por cada pieza recibirás:
 - El **arco del módulo** (para situar la pieza en el viaje).
 - Los **datos del objetivo:** el cambio "de X a Y", el diagnóstico, el papel, la profundidad, los minutos, las dependencias y si es espiral. (La estrategia la decides tú.)
 - El **índice del curso** (para no repetir lo de otras piezas o módulos).
+- En los módulos de **Economía (1º de Bachillerato y 4º de ESO)**, además, la **conexión con el libro real:** la unidad y los apartados del libro de texto oficial de la asignatura con los que enlaza la pieza.
 
 Con eso, diseñas la pieza (punto 6) y la escribes en los tres idiomas.
 

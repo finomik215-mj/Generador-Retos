@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import type { PlanModul, ObjetivoPlan } from '@/lib/systemPromptPlanificacion'
 import { MODULO_ECONOMIA } from '@/lib/conexionesCurriculares'
+import { getConexionLibro } from '@/lib/curriculoLibros'
 import FitxaPanel from './FitxaPanel'
 import ConexionesPanel from './ConexionesPanel'
 
@@ -325,7 +326,7 @@ export default function PlanificacioView() {
                               </p>
                               <div className="flex items-center gap-3 mt-2 flex-wrap">
                                 <button
-                                  onClick={() => copiar(buildBrief(o, plan.arco, labelByOrden), `brief-${o.orden}`)}
+                                  onClick={() => copiar(buildBrief(o, plan.arco, labelByOrden, plan.modulo), `brief-${o.orden}`)}
                                   className="bg-finomik-blue text-white font-extrabold text-[11px] px-3 py-1.5 rounded-xl hover:bg-finomik-blue/90 transition"
                                 >
                                   {copiat === `brief-${o.orden}` ? 'Copiat!' : 'Copiar brief per a ChatGPT'}
@@ -344,7 +345,7 @@ export default function PlanificacioView() {
                                 </button>
                               </div>
                               {veureBrief.has(o.orden) && (
-                                <pre className="mt-2 bg-finomik-light2/30 border border-finomik-light2 rounded-xl p-3 text-[11px] whitespace-pre-wrap font-sans">{buildBrief(o, plan.arco, labelByOrden)}</pre>
+                                <pre className="mt-2 bg-finomik-light2/30 border border-finomik-light2 rounded-xl p-3 text-[11px] whitespace-pre-wrap font-sans">{buildBrief(o, plan.arco, labelByOrden, plan.modulo)}</pre>
                               )}
                               {obertes.has(o.orden) && <FitxaPanel modulo={plan.modulo} orden={o.orden} bloque={o.bloque} subtema={o.subtema} onSaved={() => loadStatus(modul)} />}
                             </div>
@@ -391,8 +392,13 @@ function briefDiag(d: string): string {
   return d === 'obstaculo' ? 'obstáculo' : d === 'intuiciones_sueltas' ? 'intuiciones sueltas' : 'laguna'
 }
 
-function buildBrief(o: ObjetivoPlan, arco: PlanModul['arco'], labelByOrden: Record<number, string>): string {
+function buildBrief(o: ObjetivoPlan, arco: PlanModul['arco'], labelByOrden: Record<number, string>, modulo: string): string {
   const dep = o.dependencias?.length ? o.dependencias.map(d => labelByOrden[d] ?? d).join(', ') : 'nada'
+  const conexioLibro = getConexionLibro(modulo, o.bloque)
+  const seccioLibro = conexioLibro
+    ? `\n\nCONEXIÓN CON EL LIBRO REAL (esta asignatura tiene un libro de texto oficial; conecta la pieza con esta parte del temario, usa su terminología y respeta cómo el libro ordena los contenidos, pero NO lo repitas literal ni lo sustituyas: aterrízalo en una decisión real del alumno)
+- ${conexioLibro}`
+    : ''
   return `ARCO DEL MÓDULO
 - Modelo inicial: ${arco.modeloInicial}
 - Recorrido: ${arco.formaRecorrido}
@@ -406,7 +412,7 @@ OBJETIVO DE ESTA PIEZA (${labelByOrden[o.orden] ?? o.orden})
 - Cambio: ${o.objetivo}
 - Diagnóstico: ${briefDiag(o.diagnostico)} (${o.obstaculoOLaguna})
 - Papel: ${o.papel} · Profundidad: ${o.profundidad}
-- Minutos: ${o.minutos} · Espiral: ${o.espiral ? 'sí' : 'no'} · Depende de: ${dep}
+- Minutos: ${o.minutos} · Espiral: ${o.espiral ? 'sí' : 'no'} · Depende de: ${dep}${seccioLibro}
 
 Diseña la pieza y escríbela en los tres idiomas (catalán, castellano, inglés).`
 }
