@@ -85,6 +85,13 @@ export function tieneCurriculoLibro(modulo: string): boolean {
   return modulo === MODULO_ECONOMIA_BACH || modulo === MODULO_ECONOMIA_ESO
 }
 
+// Índice oficial completo del libro del módulo, o null.
+export function getCurriculoLibro(modulo: string): string | null {
+  if (modulo === MODULO_ECONOMIA_BACH) return INDICE_LIBRO_BACH
+  if (modulo === MODULO_ECONOMIA_ESO) return INDICE_LIBRO_ESO
+  return null
+}
+
 // Devuelve la conexión (unidad + apartados) del bloque con el libro real, o null.
 export function getConexionLibro(modulo: string, bloque: string): string | null {
   if (modulo === MODULO_ECONOMIA_BACH) return CONEXION_BACH[bloque] ?? null

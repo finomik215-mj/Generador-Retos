@@ -93,7 +93,7 @@ export default function ConexionesPanel({ modulo }: { modulo: string }) {
         )}
       </div>
       <p className="text-xs text-finomik-mid3 mb-3">
-        Instruccions per al professorat: com integrar cada bloc de Finomik amb les unitats del currículo oficial d&apos;Economia 1r de Batxillerat.
+        Instruccions per al professorat: com integrar cada bloc de Finomik amb les unitats del currículo oficial de l&apos;assignatura.
       </p>
 
       <div className="flex items-center gap-3 flex-wrap">

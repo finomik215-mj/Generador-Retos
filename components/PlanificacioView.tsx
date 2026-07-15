@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import type { PlanModul, ObjetivoPlan } from '@/lib/systemPromptPlanificacion'
-import { MODULO_ECONOMIA } from '@/lib/conexionesCurriculares'
-import { getConexionLibro } from '@/lib/curriculoLibros'
+import { getConexionLibro, tieneCurriculoLibro } from '@/lib/curriculoLibros'
 import FitxaPanel from './FitxaPanel'
 import ConexionesPanel from './ConexionesPanel'
 
@@ -281,7 +280,7 @@ export default function PlanificacioView() {
             </div>
 
             {/* Adaptació al currículo oficial (només Economia) */}
-            {modul === MODULO_ECONOMIA && <ConexionesPanel modulo={modul} />}
+            {tieneCurriculoLibro(modul) && <ConexionesPanel modulo={modul} />}
 
             {/* Objectius */}
             <div className="flex flex-col gap-3">

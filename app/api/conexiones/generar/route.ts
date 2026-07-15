@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { getSystemPromptConexiones, type GuiaConexiones } from '@/lib/systemPromptConexiones'
-import { MODULO_ECONOMIA, CONEXIONES_ECONOMIA, CURRICULO_ECONOMIA } from '@/lib/conexionesCurriculares'
+import { tieneCurriculoLibro, getConexionLibro, getCurriculoLibro } from '@/lib/curriculoLibros'
 import { supabase } from '@/lib/supabase'
 
 export const maxDuration = 60
@@ -13,8 +13,8 @@ export async function POST(req: NextRequest) {
 
   const { modulo } = await req.json() as { modulo: string }
 
-  if (modulo !== MODULO_ECONOMIA) {
-    return NextResponse.json({ error: 'La guia de connexions curriculars només està disponible per a Economia.' }, { status: 400 })
+  if (!tieneCurriculoLibro(modulo)) {
+    return NextResponse.json({ error: 'La guia de connexions curriculars només està disponible per als mòduls amb llibre oficial (Economia).' }, { status: 400 })
   }
 
   const [{ data: leccionsRaw }, { data: subtemesRaw }] = await Promise.all([
@@ -29,13 +29,13 @@ export async function POST(req: NextRequest) {
 
   const bloques = leccions.map(l => {
     const subs = subtemes.filter(s => s.leccion === l.nom).map(s => `    - ${s.nom}`).join('\n')
-    const conexion = CONEXIONES_ECONOMIA[l.nom] ?? '(sin conexión curricular registrada)'
+    const conexion = getConexionLibro(modulo, l.nom) ?? '(sin conexión curricular registrada)'
     return `[${l.nom}]\n${subs}\n  CONEXIÓN CURRICULAR (dada, no la cambies): ${conexion}`
   }).join('\n\n')
 
   const userMessage = `MÓDULO: ${modulo}
 
-${CURRICULO_ECONOMIA}
+${getCurriculoLibro(modulo) ?? ''}
 
 BLOQUES DEL MÓDULO (en este orden), con sus subtemas y su conexión curricular ya fijada:
 ${bloques}
@@ -49,7 +49,7 @@ Escribe la guía de adaptación curricular y responde SOLO con el JSON del esque
     const msg = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 8000,
-      system: getSystemPromptConexiones(),
+      system: getSystemPromptConexiones(modulo),
       messages: [{ role: 'user', content: userMessage }],
     })
     raw = msg.content.map(b => (b.type === 'text' ? b.text : '')).join('')

@@ -25,10 +25,10 @@ export interface GuiaConexiones {
   bloques: AdaptacionBloque[]
 }
 
-export function getSystemPromptConexiones(): string {
-  return `Eres asesor pedagógico de Finomik. Tu tarea: para el módulo de Economía 1º de Bachillerato, escribir una GUÍA DE ADAPTACIÓN CURRICULAR dirigida al PROFESORADO.
+export function getSystemPromptConexiones(moduloNom = 'Economía'): string {
+  return `Eres asesor pedagógico de Finomik. Tu tarea: para el módulo de ${moduloNom}, escribir una GUÍA DE ADAPTACIÓN CURRICULAR dirigida al PROFESORADO.
 
-El profesorado ya usa el currículo oficial de Economía (el libro de texto de 14 unidades). Finomik NO sustituye ese currículo: es una capa de aplicación práctica que lo aterriza en decisiones reales del alumnado. Tu guía explica, bloque a bloque, cómo integrar cada bloque de Finomik con las unidades oficiales a las que conecta.
+El profesorado ya usa el currículo oficial de la asignatura (su libro de texto). Finomik NO sustituye ese currículo: es una capa de aplicación práctica que lo aterriza en decisiones reales del alumnado. Tu guía explica, bloque a bloque, cómo integrar cada bloque de Finomik con las unidades oficiales a las que conecta.
 
 Escribe TODO en castellano (es el currículo oficial español y el destinatario es profesorado en España).
 
