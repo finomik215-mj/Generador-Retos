@@ -325,7 +325,7 @@ export default function PlanificacioView() {
                               </p>
                               <div className="flex items-center gap-3 mt-2 flex-wrap">
                                 <button
-                                  onClick={() => copiar(buildBrief(o, plan.arco, labelByOrden, plan.modulo), `brief-${o.orden}`)}
+                                  onClick={() => copiar(buildBrief(o, plan.arco, labelByOrden, plan.modulo, indexCurs), `brief-${o.orden}`)}
                                   className="bg-finomik-blue text-white font-extrabold text-[11px] px-3 py-1.5 rounded-xl hover:bg-finomik-blue/90 transition"
                                 >
                                   {copiat === `brief-${o.orden}` ? 'Copiat!' : 'Copiar brief per a ChatGPT'}
@@ -344,7 +344,7 @@ export default function PlanificacioView() {
                                 </button>
                               </div>
                               {veureBrief.has(o.orden) && (
-                                <pre className="mt-2 bg-finomik-light2/30 border border-finomik-light2 rounded-xl p-3 text-[11px] whitespace-pre-wrap font-sans">{buildBrief(o, plan.arco, labelByOrden, plan.modulo)}</pre>
+                                <pre className="mt-2 bg-finomik-light2/30 border border-finomik-light2 rounded-xl p-3 text-[11px] whitespace-pre-wrap font-sans">{buildBrief(o, plan.arco, labelByOrden, plan.modulo, indexCurs)}</pre>
                               )}
                               {obertes.has(o.orden) && <FitxaPanel modulo={plan.modulo} orden={o.orden} bloque={o.bloque} subtema={o.subtema} onSaved={() => loadStatus(modul)} />}
                             </div>
@@ -391,13 +391,14 @@ function briefDiag(d: string): string {
   return d === 'obstaculo' ? 'obstáculo' : d === 'intuiciones_sueltas' ? 'intuiciones sueltas' : 'laguna'
 }
 
-function buildBrief(o: ObjetivoPlan, arco: PlanModul['arco'], labelByOrden: Record<number, string>, modulo: string): string {
+function buildBrief(o: ObjetivoPlan, arco: PlanModul['arco'], labelByOrden: Record<number, string>, modulo: string, indexCurs: string): string {
   const dep = o.dependencias?.length ? o.dependencias.map(d => labelByOrden[d] ?? d).join(', ') : 'nada'
   const conexioLibro = getConexionLibro(modulo, o.bloque)
   const seccioLibro = conexioLibro
     ? `\n\nCONEXIÓN CON EL LIBRO REAL (esta asignatura tiene un libro de texto oficial; conecta la pieza con esta parte del temario, usa su terminología y respeta cómo el libro ordena los contenidos, pero NO lo repitas literal ni lo sustituyas: aterrízalo en una decisión real del alumno)
 - ${conexioLibro}`
     : ''
+  const seccioIndex = indexCurs ? `\n\n${indexCurs}` : ''
   return `ARCO DEL MÓDULO
 - Modelo inicial: ${arco.modeloInicial}
 - Recorrido: ${arco.formaRecorrido}
@@ -412,6 +413,12 @@ OBJETIVO DE ESTA PIEZA (${labelByOrden[o.orden] ?? o.orden})
 - Diagnóstico: ${briefDiag(o.diagnostico)} (${o.obstaculoOLaguna})
 - Papel: ${o.papel} · Profundidad: ${o.profundidad}
 - Minutos: ${o.minutos} · Espiral: ${o.espiral ? 'sí' : 'no'} · Depende de: ${dep}${seccioLibro}
+
+PARA QUIÉN ESCRIBES (obligatorio)
+Alumnado de secundaria que oye estos conceptos POR PRIMERA VEZ. No des nada por sabido: parte de cero, explica cada término la primera vez que aparezca con lenguaje sencillo y ejemplos cercanos, sin jerga económica sin aclarar. Si una frase solo la entiende quien ya sabe economía, reescríbela.
+
+NO REPETIR CONCEPTOS (crítico)
+Cada concepto del curso se explica en UNA sola pieza. En el índice de abajo, todo lo que pertenece a OTRA pieza o módulo NO lo expliques aquí: si necesitas apoyarte en ello, una frase de recordatorio y sigues, nunca lo desarrolles ni lo definas desde cero. Lo que el alumno "ya sabe" (dependencias) tampoco se re-explica.${seccioIndex}
 
 Diseña la pieza y escríbela en los tres idiomas (catalán, castellano, inglés).`
 }

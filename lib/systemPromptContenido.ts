@@ -217,6 +217,7 @@ No escrius com un llibre de text. Tampoc com un youtuber. Escrius com algú que 
 **3. Normes de marca.**
 - MAI usis el guió llarg (—). Substitueix-lo per coma, punt i coma, dos punts o punt.
 - Argot financer sempre explicat: la primera vegada que apareix un terme tècnic, explica'l amb paraules senzilles dins del mateix text.
+- Escrius per a alumnat de secundària que SENT aquests conceptes PER PRIMERA VEGADA. No donis res per sabut: parteix de zero i explica cada idea des del principi. Si una frase només l'entén qui ja sap economia, reescriu-la.
 
 ---
 
